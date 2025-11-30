@@ -1,234 +1,221 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRealtimeAPI } from '@/lib/hooks/useRealtimeAPI';
+import { VideoContainer } from '@/components/realtime/VideoContainer';
+import { Camera, ArrowLeft, AlertCircle, Compass, Clock } from 'lucide-react';
 
 export default function LoginPage() {
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [faceInFrame, setFaceInFrame] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'detecting' | 'success' | 'failed'>('idle');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    return () => {
-      // Cleanup camera on unmount
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        }
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsCameraActive(true);
-        setVerificationStatus('detecting');
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please grant camera permissions.');
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsCameraActive(false);
-    setFaceDetected(false);
-    setFaceInFrame(false);
-    setVerificationStatus('idle');
-  };
-
-  const simulateFaceDetection = () => {
-    // Simulate face detection (replace with actual ML model later)
-    const detected = Math.random() > 0.3;
-    const inFrame = Math.random() > 0.2;
-    
-    setFaceDetected(detected);
-    setFaceInFrame(detected && inFrame);
-    
-    if (detected && inFrame) {
-      // Simulate successful verification after 2 seconds
-      setTimeout(() => {
-        setVerificationStatus('success');
-        setTimeout(() => {
-          // Redirect to feed or dashboard
-          window.location.href = '/feed';
-        }, 1500);
-      }, 2000);
-    }
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isCameraActive && verificationStatus === 'detecting') {
-      interval = setInterval(simulateFaceDetection, 500);
-    }
-    return () => clearInterval(interval);
-  }, [isCameraActive, verificationStatus]);
+  const {
+    isStreaming,
+    cameraAccess,
+    detectionResult,
+    taskStatus,
+    error,
+    videoRef,
+    canvasRef,
+    startCamera,
+    stopCamera,
+    startLivenessTask,
+    resetTaskSession,
+  } = useRealtimeAPI();
 
   return (
-    <div className="min-h-screen bg-background-dark flex items-center justify-center px-4 py-8 pt-24 md:pt-32">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Face Login</h1>
-          <p className="text-gray-400">Verify your identity with liveness detection</p>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/" className="flex items-center text-white hover:text-purple-300 transition-colors">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back to Home
+          </Link>
+          <h1 className="text-3xl font-bold text-white flex items-center">
+            <Camera className="w-8 h-8 mr-3 text-purple-400" />
+            Face Verification Login
+          </h1>
         </div>
 
-        {/* Camera Container */}
-        <div className="backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl p-6 mb-6">
-          <div className="relative aspect-[4/3] bg-black rounded-xl overflow-hidden mb-4">
-            {isCameraActive ? (
-              <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                />
-                
-                {/* Face Detection Circle Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className={`w-64 h-64 rounded-full border-4 transition-all duration-300 ${
-                    faceInFrame 
-                      ? 'border-green-500 shadow-lg shadow-green-500/50' 
-                      : faceDetected 
-                      ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' 
-                      : 'border-primary/50 border-dashed'
-                  }`}>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {!faceDetected && (
-                        <p className="text-white text-sm text-center px-4">
-                          Position your face in the circle
-                        </p>
-                      )}
-                      {faceDetected && !faceInFrame && (
-                        <p className="text-yellow-500 text-sm text-center px-4">
-                          Move closer to the frame
-                        </p>
-                      )}
-                      {faceInFrame && verificationStatus === 'detecting' && (
-                        <p className="text-green-500 text-sm text-center px-4">
-                          Verifying...
-                        </p>
-                      )}
-                    </div>
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6">
+            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+            <div>
+              <strong>Error:</strong> {error}
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Camera Feed - 2 columns */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                <Camera className="w-6 h-6 mr-2 text-purple-400" />
+                Camera
+              </h2>
+              <VideoContainer videoRef={videoRef} canvasRef={canvasRef} isStreaming={isStreaming} />
+              {!isStreaming && (
+                <div className="text-center text-gray-400 mt-4">
+                  <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Click &quot;Start Camera&quot; to begin verification</p>
+                </div>
+              )}
+              {isStreaming && (
+                <div className="text-center text-green-400 mt-4">
+                  <div className="inline-flex items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                    Camera active
                   </div>
                 </div>
+              )}
 
-                {/* Status Indicators */}
-                <div className="absolute top-4 left-4 right-4 flex justify-between">
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    faceDetected 
-                      ? 'bg-green-500/20 text-green-500 border border-green-500/50' 
-                      : 'bg-red-500/20 text-red-500 border border-red-500/50'
-                  }`}>
-                    {faceDetected ? 'Face Detected' : 'No Face'}
+              {/* Camera Controls */}
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                {!isStreaming ? (
+                  <button
+                    onClick={startCamera}
+                    disabled={cameraAccess === 'denied'}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Start Camera
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopCamera}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Stop Camera
+                  </button>
+                )}
+                
+                {isStreaming && !taskStatus?.active && (
+                  <button
+                    onClick={startLivenessTask}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Start Verification
+                  </button>
+                )}
+                
+                {taskStatus?.result && (
+                  <button
+                    onClick={resetTaskSession}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Info - 1 column */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Head Direction */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Compass className="w-5 h-5 mr-2 text-blue-400" />
+                Head Direction
+              </h3>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {detectionResult?.head_pose?.direction || 'Forward'}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Keep your head {taskStatus?.current_task?.description?.toLowerCase() || 'centered'}
+                </div>
+              </div>
+            </div>
+
+            {/* Liveness Tasks */}
+            {taskStatus && (
+              <div className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 ${
+                taskStatus.active 
+                  ? 'border-orange-500' 
+                  : taskStatus.result?.final_result 
+                  ? 'border-green-500' 
+                  : 'border-red-500'
+              }`}>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-orange-400" />
+                  Liveness Verification Tasks
+                </h3>
+                
+                {/* Task Progress */}
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-300 text-sm">
+                      {taskStatus.active 
+                        ? `Task ${(taskStatus.completed_tasks || 0) + 1}/${taskStatus.total_tasks || 0}`
+                        : 'Complete'
+                      }
+                    </span>
+                    <span className="font-bold text-orange-400 text-lg">
+                      {taskStatus.active 
+                        ? `${Math.ceil(taskStatus.time_remaining || 0)}s`
+                        : `${taskStatus.result?.duration?.toFixed(1) || '0.0'}s`
+                      }
+                    </span>
                   </div>
-                  {verificationStatus === 'success' && (
-                    <div className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-500 border border-green-500/50">
-                      ✓ Verified
+                  
+                  {/* Current Task Display */}
+                  {taskStatus.active && (
+                    <div className="text-2xl font-bold text-center text-blue-400 my-4 py-3 bg-blue-900/30 rounded-lg">
+                      {taskStatus.current_task?.description || 'Preparing...'}
                     </div>
                   )}
+                  
+                  {/* Task List */}
+                  <div className="space-y-2">
+                    {taskStatus.tasks?.map((task: string, index: number) => (
+                      <div
+                        key={index}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          index < (taskStatus.completed_tasks || 0)
+                            ? 'bg-green-500 text-white'
+                            : index === (taskStatus.completed_tasks || 0) && taskStatus.active
+                            ? 'bg-orange-500 text-white animate-pulse'
+                            : 'bg-gray-700 text-gray-300'
+                        }`}
+                      >
+                        {task}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </>
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                <svg className="w-20 h-20 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <p className="text-sm">Camera is off</p>
+                
+                {/* Final Result */}
+                {taskStatus.result && (
+                  <div className={`mt-4 text-center p-4 rounded-lg font-bold text-lg ${
+                    taskStatus.result.final_result 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-red-600 text-white'
+                  }`}>
+                    {taskStatus.result.final_result ? '✓ VERIFIED' : '✗ VERIFICATION FAILED'}
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
-          {/* Camera Controls */}
-          <div className="flex gap-3">
-            {!isCameraActive ? (
-              <button
-                onClick={startCamera}
-                className="flex-1 py-3 px-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Start Camera
-              </button>
-            ) : (
-              <button
-                onClick={stopCamera}
-                className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Stop Camera
-              </button>
-            )}
+            {/* Instructions */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-white mb-3">Instructions</h3>
+              <ul className="text-sm text-gray-300 space-y-2">
+                <li>• Start the camera</li>
+                <li>• Position your face in the frame</li>
+                <li>• Click &quot;Start Verification&quot;</li>
+                <li>• Follow the on-screen tasks</li>
+                <li>• Complete all tasks within time limit</li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl p-4 mb-6">
-          <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Instructions
-          </h3>
-          <ul className="text-gray-400 text-sm space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>Position your face within the circular frame</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>Ensure good lighting on your face</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>Keep your face centered and still</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>Verification will start automatically</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* Alternative Login */}
-        <div className="text-center">
-          <Link 
-            href="/" 
-            className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
-          >
-            ← Back to Home
-          </Link>
-        </div>
+        {/* Footer */}
+        <footer className="mt-8 text-center text-gray-400 text-sm">
+          Secured by AI-powered face verification
+        </footer>
       </div>
     </div>
   );
