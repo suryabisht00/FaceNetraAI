@@ -1,7 +1,30 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
-const testimonials = [
+export default function Testimonials() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const testimonials = [
   {
     name: 'Sarah Johnson',
     role: 'Digital Nomad',
@@ -22,11 +45,10 @@ const testimonials = [
   },
 ];
 
-export default function Testimonials() {
   return (
-    <section className="py-20 px-4">
+    <section ref={sectionRef} className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col gap-4 text-center mb-12">
+        <div className={`flex flex-col gap-4 text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="font-poppins text-white text-3xl font-bold leading-tight sm:text-4xl">
             What Our Users Say
           </h2>
@@ -38,7 +60,8 @@ export default function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="flex flex-col gap-5 p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300"
+              className={`flex flex-col gap-5 p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+              style={{ transitionDelay: `${200 + index * 150}ms` }}
             >
               <div className="flex items-center gap-4">
                 <div className="relative">

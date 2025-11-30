@@ -1,6 +1,29 @@
-import React from 'react';
+'use client';
 
-const reasons = [
+import React, { useEffect, useRef, useState } from 'react';
+
+export default function WhyChoose() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const reasons = [
   {
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,11 +80,10 @@ const reasons = [
   },
 ];
 
-export default function WhyChoose() {
   return (
-    <section className="py-20 px-4">
+    <section ref={sectionRef} className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col gap-4 text-center mb-12">
+        <div className={`flex flex-col gap-4 text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="font-poppins text-white text-3xl font-bold leading-tight sm:text-4xl">
             Why Choose FaceNetra?
           </h2>
@@ -73,9 +95,10 @@ export default function WhyChoose() {
           {reasons.map((reason, index) => (
             <div
               key={index}
-              className="flex flex-col gap-3 p-6 rounded-2xl border border-white/10 bg-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+              className={`flex flex-col gap-3 p-6 rounded-2xl border border-white/10 bg-white/5 hover:border-primary/40 hover:bg-primary/5 hover:scale-105 hover:-translate-y-1 transition-all duration-500 group ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+              style={{ transitionDelay: `${200 + index * 100}ms` }}
             >
-              <div className="flex items-center justify-center size-12 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+              <div className="flex items-center justify-center size-12 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                 {reason.icon}
               </div>
               <h3 className="text-white text-lg font-bold leading-tight">{reason.title}</h3>

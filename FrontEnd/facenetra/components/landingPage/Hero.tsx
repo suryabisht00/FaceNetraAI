@@ -1,13 +1,21 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import ProfileCard from '../ui/ProfileCard';
 
 export default function Hero() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
     <main className="flex flex-1 flex-col py-10 md:py-20">
       <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:gap-8">
-        <div className="flex w-full flex-col gap-6 text-left lg:w-1/2">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 w-fit">
+        <div className={`flex w-full flex-col gap-6 text-left lg:w-1/2 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 w-fit transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             <span className="size-2 rounded-full bg-primary animate-pulse"></span>
             <span className="text-sm text-primary font-medium">AI-Powered Face Recognition</span>
           </div>
@@ -49,14 +57,16 @@ export default function Hero() {
             </div>
           </div>
         </div>
-        <div className="w-full lg:w-1/2 flex justify-center items-center">
-          <ProfileCard
+        <div className={`w-full lg:w-1/2 flex justify-center items-center transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
+          <div className="animate-float">
+            <ProfileCard
             name="Alex Ray"
             username="alexray"
             interests="AI, Design, Sci-Fi"
             diary="Exploring the neon-lit alleys of Neo-Tokyo. The future is now."
             imageUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuBLujdPP2v8G3HDXF25yWqXUPVt5K-EsHjhapUynLgMyivvSQHoqQY8SxndqbDwGi4HYQVDC5D2kkraweQlx3QSTHalU2zzMSmEYjhi8Norx-C5b1Ph_3t8sK7_wOW6mjDKtj9YisWpG54YMGF6hLBVh6jucrJNT-9YMvP8Q7pcrMThGBeIACmHD8LQjwXaN-uGERGvWZpPecdUx_8E1LSVgcrbUTVeS3q_fVDcv1r2vy57IYWIyTaffxPxI6-miSR-j131HTTUFAc"
           />
+          </div>
         </div>
       </div>
     </main>

@@ -11,17 +11,19 @@ interface ProfileCardProps {
 
 export default function ProfileCard({ name, username, interests, diary, imageUrl }: ProfileCardProps) {
   return (
-    <div className="relative w-full max-w-sm p-8 glassmorphism-card rounded-2xl neon-glow-border">
+    <div className="relative w-full max-w-sm p-8 glassmorphism-card rounded-2xl neon-glow-border hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 group">
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="relative">
-          <Image
-            className="size-24 rounded-full border-2 border-primary object-cover neon-glow-subtle"
-            src={imageUrl}
-            alt={`${name}'s profile`}
-            width={96}
-            height={96}
-          />
-          <div className="absolute bottom-0 right-0 size-8 bg-primary rounded-full flex items-center justify-center border-2 border-[#0B0F1A] neon-glow-subtle cursor-pointer">
+          <div className="relative overflow-hidden rounded-full">
+            <Image
+              className="size-24 rounded-full border-2 border-primary object-cover neon-glow-subtle group-hover:scale-110 transition-transform duration-300"
+              src={imageUrl}
+              alt={`${name}'s profile`}
+              width={96}
+              height={96}
+            />
+          </div>
+          <div className="absolute bottom-0 right-0 size-8 bg-primary rounded-full flex items-center justify-center border-2 border-[#0B0F1A] neon-glow-subtle cursor-pointer hover:scale-125 transition-transform duration-300">
             <svg 
               className="w-5 h-5 text-white" 
               fill="none" 
@@ -49,7 +51,7 @@ export default function ProfileCard({ name, username, interests, diary, imageUrl
           <p className="text-sm text-primary">@{username}</p>
         </div>
         <p className="text-sm text-[#E5E7EB]">{interests}</p>
-        <div className="w-full p-3 bg-white/5 rounded-lg text-left">
+        <div className="w-full p-3 bg-white/5 rounded-lg text-left hover:bg-white/10 transition-colors duration-300">
           <p className="text-xs font-bold text-primary mb-1">Mini Diary</p>
           <p className="text-sm text-[#E5E7EB]">{diary}</p>
         </div>

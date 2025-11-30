@@ -1,7 +1,30 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
 import FeatureCard from '../ui/FeatureCard';
 
-const features = [
+export default function Features() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const features = [
   {
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -31,10 +54,9 @@ const features = [
   },
 ];
 
-export default function Features() {
   return (
-    <section id="features" className="flex flex-col gap-10 px-4 py-20">
-      <div className="flex flex-col gap-4 text-center">
+    <section ref={sectionRef} id="features" className="flex flex-col gap-10 px-4 py-20">
+      <div className={`flex flex-col gap-4 text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <h2 className="font-poppins text-white text-3xl font-bold leading-tight sm:text-4xl">
           How It Works
         </h2>
@@ -44,12 +66,17 @@ export default function Features() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {features.map((feature, index) => (
-          <FeatureCard
+          <div
             key={index}
-            icon={feature.icon}
-            title={feature.title}
-            description={feature.description}
-          />
+            className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+            style={{ transitionDelay: `${200 + index * 150}ms` }}
+          >
+            <FeatureCard
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+            />
+          </div>
         ))}
       </div>
     </section>
