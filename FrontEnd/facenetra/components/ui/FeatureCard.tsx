@@ -8,7 +8,7 @@ interface FeatureCardProps {
 
 export default function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-primary/40 bg-primary/10 p-6 text-center items-center transition-all duration-300 hover:border-primary hover:bg-primary/20 hover:scale-105 hover:shadow-lg hover:shadow-primary/20 group">
+    <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-primary/40 bg-primary/10 p-6 text-center items-center transition-all duration-300 hover:border-primary hover:bg-primary/20 hover:scale-105 hover:shadow-lg hover:shadow-primary/20 group h-full">
       <div className="flex items-center justify-center size-12 rounded-full border-2 border-primary text-primary group-hover:scale-125 group-hover:rotate-6 transition-all duration-300">
         {icon}
       </div>

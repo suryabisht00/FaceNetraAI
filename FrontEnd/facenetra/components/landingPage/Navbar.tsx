@@ -31,21 +31,15 @@ export default function Navbar() {
   }, [lastScrollY]);
 
   return (
-    <header className={`flex w-full items-center justify-between whitespace-nowrap backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl px-6 py-4 fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] lg:max-w-[1280px] transition-all duration-300 ${
+    <header className={`flex w-full items-center justify-between whitespace-nowrap backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl px-6 py-2 fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] lg:max-w-[1280px] transition-all duration-300 ${
       isVisible ? 'top-5 opacity-100' : '-top-24 opacity-0'
     }`}>
-      <div className="flex items-center gap-3 text-primary">
-        <div className="size-7">
-          <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z"
-              fill="currentColor"
-            />
-          </svg>
-        </div>
-        <h2 className="text-lg font-poppins font-bold leading-tight tracking-wide text-white">
-          FaceNetraAI
-        </h2>
+      <div className="flex items-center gap-3 py-1">
+        <img 
+          src="/logo.png" 
+          alt="FaceNetraAI Logo" 
+          className="h-10 w-auto object-contain"
+        />
       </div>
 
       {/* Desktop Navigation */}
