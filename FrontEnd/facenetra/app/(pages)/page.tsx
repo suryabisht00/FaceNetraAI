@@ -1,4 +1,3 @@
-import Navbar from '@/components/landingPage/Navbar';
 import Hero from '@/components/landingPage/Hero';
 import Stats from '@/components/landingPage/Stats';
 import Features from '@/components/landingPage/Features';
@@ -7,18 +6,13 @@ import Testimonials from '@/components/landingPage/Testimonials';
 import CTA from '@/components/landingPage/CTA';
 import Footer from '@/components/landingPage/Footer';
 import ParallaxBackground from '@/components/ui/ParallaxBackground';
-import ScrollProgress from '@/components/ui/ScrollProgress';
-import BackToTop from '@/components/ui/BackToTop';
 import MouseGradient from '@/components/ui/MouseGradient';
 
 export default function Home() {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-dark overflow-x-hidden">
-      <ScrollProgress />
       <ParallaxBackground />
       <MouseGradient />
-      <BackToTop />
-      <Navbar />
       <div className="layout-container flex h-full grow flex-col pt-20">
         <div className="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center">
           <div className="layout-content-container flex flex-col w-full max-w-7xl flex-1">

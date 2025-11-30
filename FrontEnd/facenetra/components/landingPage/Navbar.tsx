@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
+  const pathname = usePathname();
+
+  // Hide bottom navbar on landing, login, and register pages
+  const hideBottomNav = pathname === '/' || pathname === '/login' || pathname === '/register';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,23 +94,35 @@ export default function Navbar() {
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
           <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'cursive' }}>FaceNetraAI</h1>
           <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-primary/10 rounded-xl transition-all active:scale-95 border border-primary/20 backdrop-blur-sm bg-[#0B0F1A]/60">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-            <button className="p-2 hover:bg-primary/10 rounded-xl transition-all active:scale-95 border border-primary/20 backdrop-blur-sm bg-[#0B0F1A]/60">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </button>
+            {pathname === '/' ? (
+              <a 
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 transition-all active:scale-95 border border-primary/20"
+              >
+                Login
+              </a>
+            ) : (
+              <>
+                <button className="p-2 hover:bg-primary/10 rounded-xl transition-all active:scale-95 border border-primary/20 backdrop-blur-sm bg-[#0B0F1A]/60">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <button className="p-2 hover:bg-primary/10 rounded-xl transition-all active:scale-95 border border-primary/20 backdrop-blur-sm bg-[#0B0F1A]/60">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Mobile Bottom Navigation - Instagram Style */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0B0F1A]/80 border-t border-primary/20 shadow-xl">
-        <ul className="flex justify-around items-center py-2 px-2">
+      {!hideBottomNav && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0B0F1A]/80 border-t border-primary/20 shadow-xl">
+          <ul className="flex justify-around items-center py-2 px-2">
           <li className="flex-1">
             <a
               className="flex flex-col items-center py-1.5 px-2 text-white hover:text-primary transition-all active:scale-95 rounded-xl hover:bg-primary/10"
@@ -163,6 +180,7 @@ export default function Navbar() {
           </li>
         </ul>
       </nav>
+      )}
     </>
   );
 }

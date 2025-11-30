@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Button from '../ui/Button';
 import ProfileCard from '../ui/ProfileCard';
 
@@ -31,9 +32,11 @@ export default function Hero() {
             <Button variant="primary" className="h-12 px-5 text-base">
               Scan a Face
             </Button>
-            <Button variant="secondary" className="h-12 px-5 text-base">
-              Create Your Face Profile
-            </Button>
+            <Link href="/login">
+              <Button variant="secondary" className="h-12 px-5 text-base">
+                Create Your Face Profile
+              </Button>
+            </Link>
           </div>
           {/* Trust indicators */}
           <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-white/10">
