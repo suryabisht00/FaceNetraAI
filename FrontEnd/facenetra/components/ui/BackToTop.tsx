@@ -24,13 +24,15 @@ export default function BackToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-8 right-8 z-40 p-4 rounded-full bg-primary border-2 border-primary/50 text-white shadow-lg hover:scale-110 hover:shadow-xl hover:shadow-primary/50 transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16 pointer-events-none'
+      className={`fixed z-40 rounded-full bg-primary border-2 border-primary/50 text-white shadow-lg hover:scale-110 hover:shadow-xl hover:shadow-primary/50 transition-all duration-300 
+        md:bottom-8 md:right-8 md:p-4
+        bottom-20 right-4 p-3
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16 pointer-events-none'
       }`}
       aria-label="Back to top"
     >
       <svg
-        className="w-6 h-6"
+        className="md:w-6 md:h-6 w-5 h-5"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
