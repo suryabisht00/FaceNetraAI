@@ -20,24 +20,50 @@ export default function LoginPage() {
     resetTaskSession,
   } = useRealtimeAPI();
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link href="/" className="flex items-center text-white hover:text-purple-300 transition-colors">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Home
-          </Link>
-          <h1 className="text-3xl font-bold text-white flex items-center">
-            <Camera className="w-8 h-8 mr-3 text-purple-400" />
-            Face Verification Login
-          </h1>
-        </div>
+  // Get head direction from detection result
+  const headDirection = detectionResult?.head_pose?.direction || 'Looking Straight';
+  
+  // Get current task description
+  const currentTaskDescription = taskStatus?.current_task?.description || 'Position your face within the circle to begin.';
 
+  // Handle try again - reset session and restart camera
+  const handleTryAgain = async () => {
+    await resetTaskSession();
+    // Small delay to ensure session is cleared
+    setTimeout(() => {
+      startCamera();
+    }, 500);
+  };
+
+  // Handle stop camera button click
+  const handleStopCamera = () => {
+    stopCamera(false); // false = don't preserve task status
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0B0F1A] p-4">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 sm:px-10 py-3 max-w-[960px] mx-auto">
+        <div className="flex items-center gap-4 text-white">
+          <div className="w-6 h-6">
+            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 className="text-white text-xl font-bold">AURA</h2>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/" className="flex cursor-pointer items-center justify-center rounded-xl h-10 bg-white/10 text-white min-w-0 px-2.5 hover:bg-white/20 transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex flex-col items-center justify-center flex-grow py-8 px-4 text-center max-w-[960px] mx-auto">
         {/* Error Display */}
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6">
+          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6 w-full max-w-md">
             <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
             <div>
               <strong>Error:</strong> {error}
@@ -45,178 +71,247 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Camera Feed - 2 columns */}
-          <div className="lg:col-span-2">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <Camera className="w-6 h-6 mr-2 text-purple-400" />
-                Camera
-              </h2>
-              <VideoContainer videoRef={videoRef} canvasRef={canvasRef} isStreaming={isStreaming} />
-              {!isStreaming && (
-                <div className="text-center text-gray-400 mt-4">
-                  <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Click &quot;Start Camera&quot; to begin verification</p>
-                </div>
-              )}
-              {isStreaming && (
-                <div className="text-center text-green-400 mt-4">
-                  <div className="inline-flex items-center">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
-                    Camera active
-                  </div>
-                </div>
-              )}
+        {/* Title - only show when not streaming */}
+        {!isStreaming && (
+          <>
+            <h1 className="text-[#E5E7EB] text-[24px] sm:text-[32px] font-bold leading-tight px-4 text-center pb-3 pt-6">
+              Current Head Direction: {headDirection}
+            </h1>
+            <p className="text-[#E5E7EB]/70 text-base mb-8">
+              {currentTaskDescription}
+            </p>
+          </>
+        )}
 
-              {/* Camera Controls */}
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                {!isStreaming ? (
-                  <button
-                    onClick={startCamera}
-                    disabled={cameraAccess === 'denied'}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Start Camera
-                  </button>
-                ) : (
-                  <button
-                    onClick={stopCamera}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    Stop Camera
-                  </button>
-                )}
-                
-                {isStreaming && !taskStatus?.active && (
-                  <button
-                    onClick={startLivenessTask}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    Start Verification
-                  </button>
-                )}
-                
-                {taskStatus?.result && (
-                  <button
-                    onClick={resetTaskSession}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-            </div>
+        {/* Camera Feed with circular design - hide when result is available */}
+        {!taskStatus?.result && (
+          <div className="my-6 w-full">
+            <VideoContainer 
+              videoRef={videoRef} 
+              canvasRef={canvasRef} 
+              isStreaming={isStreaming}
+              headDirection={headDirection}
+            />
           </div>
+        )}
 
-          {/* Sidebar Info - 1 column */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Head Direction */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Compass className="w-5 h-5 mr-2 text-blue-400" />
-                Head Direction
-              </h3>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {detectionResult?.head_pose?.direction || 'Forward'}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Keep your head {taskStatus?.current_task?.description?.toLowerCase() || 'centered'}
-                </div>
-              </div>
+        {/* Task Status with Timer - shown when task is active */}
+        {taskStatus?.active && (
+          <div className="w-full max-w-md mb-6 p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-[#E5E7EB] text-lg font-bold">
+                Liveness Verification Tasks
+              </p>
+              <span className="text-[#ff6a00] font-bold text-xl">
+                {Math.ceil(taskStatus.time_remaining || 0)}s
+              </span>
             </div>
+            <p className="text-[#E5E7EB]/70 text-sm mb-2">
+              Task {(taskStatus.completed_tasks || 0) + 1}/{taskStatus.total_tasks || 0}
+            </p>
+            <p className="text-[#ff6a00] text-2xl font-bold mb-3">
+              {taskStatus.current_task?.description || 'Preparing...'}
+            </p>
+          </div>
+        )}
 
-            {/* Liveness Tasks */}
-            {taskStatus && (
-              <div className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 ${
-                taskStatus.active 
-                  ? 'border-orange-500' 
-                  : taskStatus.result?.final_result 
-                  ? 'border-green-500' 
-                  : 'border-red-500'
+        {/* Verification Result - Show prominently when available */}
+        {taskStatus?.result && (
+          <div className={`w-full max-w-md mb-6 p-8 rounded-3xl border-2 ${
+            taskStatus.result.final_result
+              ? 'bg-gradient-to-br from-green-900/80 to-green-800/60 border-green-500'
+              : 'bg-gradient-to-br from-red-900/80 to-red-800/60 border-red-500'
+          } backdrop-blur-sm shadow-2xl`}
+          style={{
+            boxShadow: taskStatus.result.final_result
+              ? '0 0 30px rgba(34, 197, 94, 0.4)'
+              : '0 0 30px rgba(239, 68, 68, 0.4)'
+          }}>
+            {/* Main Result */}
+            <div className="text-center mb-6">
+              <div className={`text-6xl mb-4 ${
+                taskStatus.result.final_result ? 'text-green-300' : 'text-red-300'
               }`}>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-orange-400" />
-                  Liveness Verification Tasks
-                </h3>
-                
-                {/* Task Progress */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm">
-                      {taskStatus.active 
-                        ? `Task ${(taskStatus.completed_tasks || 0) + 1}/${taskStatus.total_tasks || 0}`
-                        : 'Complete'
-                      }
-                    </span>
-                    <span className="font-bold text-orange-400 text-lg">
-                      {taskStatus.active 
-                        ? `${Math.ceil(taskStatus.time_remaining || 0)}s`
-                        : `${taskStatus.result?.duration?.toFixed(1) || '0.0'}s`
-                      }
-                    </span>
-                  </div>
-                  
-                  {/* Current Task Display */}
-                  {taskStatus.active && (
-                    <div className="text-2xl font-bold text-center text-blue-400 my-4 py-3 bg-blue-900/30 rounded-lg transition-all duration-75">
-                      {taskStatus.current_task?.description || 'Preparing...'}
+                {taskStatus.result.final_result ? '✓' : '✗'}
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">
+                {taskStatus.result.final_result ? 'VERIFICATION PASSED' : 'VERIFICATION FAILED'}
+              </h2>
+              <p className={`text-lg ${
+                taskStatus.result.final_result ? 'text-green-200' : 'text-red-200'
+              }`}>
+                {taskStatus.result.final_result 
+                  ? 'Live person detected successfully' 
+                  : 'Verification requirements not met'}
+              </p>
+            </div>
+
+            {/* Detailed Results */}
+            <div className="space-y-4 bg-black/30 rounded-xl p-6">
+              {/* Task Completion */}
+              <div className="flex justify-between items-center">
+                <span className="text-white/80 text-sm">Tasks Completed:</span>
+                <span className="text-white font-bold">
+                  {taskStatus.result.completed || 0}/{taskStatus.result.total || 0}
+                </span>
+              </div>
+
+              {/* Success Rate */}
+              {taskStatus.result.success_rate !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 text-sm">Success Rate:</span>
+                  <span className={`font-bold ${
+                    (taskStatus.result.success_rate || 0) >= 80 ? 'text-green-300' : 'text-orange-300'
+                  }`}>
+                    {taskStatus.result.success_rate?.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+
+              {/* Duration */}
+              {taskStatus.result.duration !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 text-sm">Duration:</span>
+                  <span className="text-white font-bold">
+                    {taskStatus.result.duration?.toFixed(1)}s
+                  </span>
+                </div>
+              )}
+
+              {/* Anti-Spoof Status */}
+              {taskStatus.result.anti_spoof_passed !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 text-sm">Anti-Spoof Check:</span>
+                  <span className={`font-bold ${
+                    taskStatus.result.anti_spoof_passed ? 'text-green-300' : 'text-red-300'
+                  }`}>
+                    {taskStatus.result.anti_spoof_passed ? 'PASSED ✓' : 'FAILED ✗'}
+                  </span>
+                </div>
+              )}
+
+              {/* Anti-Spoof Validation Details */}
+              {taskStatus.result.anti_spoof_validation && (
+                <div className="mt-4 pt-4 border-t border-white/20">
+                  <p className="text-white/80 text-xs mb-2">Anti-Spoof Details:</p>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Real Predictions:</span>
+                      <span className="text-white">
+                        {taskStatus.result.anti_spoof_validation.real_predictions}/
+                        {taskStatus.result.anti_spoof_validation.total_predictions}
+                      </span>
                     </div>
-                  )}
-                  
-                  {/* Task List */}
-                  <div className="space-y-2">
-                    {taskStatus.tasks?.map((task: string, index: number) => (
-                      <div
-                        key={index}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-75 ${
-                          index < (taskStatus.completed_tasks || 0)
-                            ? 'bg-green-500 text-white'
-                            : index === (taskStatus.completed_tasks || 0) && taskStatus.active
-                            ? 'bg-orange-500 text-white animate-pulse'
-                            : 'bg-gray-700 text-gray-300'
-                        }`}
-                      >
-                        {task}
-                      </div>
-                    ))}
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Real Percentage:</span>
+                      <span className={`font-semibold ${
+                        taskStatus.result.anti_spoof_validation.real_percentage >= 60 
+                          ? 'text-green-300' 
+                          : 'text-red-300'
+                      }`}>
+                        {taskStatus.result.anti_spoof_validation.real_percentage?.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Avg Confidence:</span>
+                      <span className="text-white">
+                        {(taskStatus.result.anti_spoof_validation.average_confidence * 100)?.toFixed(1)}%
+                      </span>
+                    </div>
+                    {taskStatus.result.anti_spoof_validation.reason && (
+                      <p className="text-white/60 italic mt-2 text-xs">
+                        {taskStatus.result.anti_spoof_validation.reason}
+                      </p>
+                    )}
                   </div>
                 </div>
-                
-                {/* Final Result */}
-                {taskStatus.result && (
-                  <div className={`mt-4 text-center p-4 rounded-lg font-bold text-lg ${
-                    taskStatus.result.final_result 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-red-600 text-white'
-                  }`}>
-                    {taskStatus.result.final_result ? '✓ VERIFIED' : '✗ VERIFICATION FAILED'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Instructions */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-3">Instructions</h3>
-              <ul className="text-sm text-gray-300 space-y-2">
-                <li>• Start the camera</li>
-                <li>• Position your face in the frame</li>
-                <li>• Click &quot;Start Verification&quot;</li>
-                <li>• Follow the on-screen tasks</li>
-                <li>• Complete all tasks within time limit</li>
-              </ul>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Footer */}
-        <footer className="mt-8 text-center text-gray-400 text-sm">
-          Secured by AI-powered face verification
-        </footer>
-      </div>
+        {/* Task Checklist - Only show if tasks exist and no result yet */}
+        {taskStatus?.tasks && taskStatus.tasks.length > 0 && !taskStatus.result && (
+          <div className="w-full max-w-md mt-10 p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <p className="text-[#E5E7EB] text-lg font-bold leading-normal mb-4">
+              Please complete the following actions:
+            </p>
+            <div className="px-4">
+              {taskStatus.tasks.map((task: string, index: number) => (
+                <label key={index} className="flex gap-x-3 py-3 flex-row items-center">
+                  <input
+                    type="checkbox"
+                    checked={index < (taskStatus.completed_tasks || 0)}
+                    disabled
+                    className="h-5 w-5 rounded border-[#6b472e] border-2 bg-transparent text-[#ff6a00] checked:bg-[#ff6a00] checked:border-[#ff6a00] focus:ring-0 focus:ring-offset-0 focus:border-[#ff6a00]/50 focus:outline-none"
+                    style={{
+                      backgroundImage: index < (taskStatus.completed_tasks || 0) 
+                        ? "url('data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e')"
+                        : 'none'
+                    }}
+                  />
+                  <p className="text-white text-base font-normal leading-normal">
+                    {task}
+                  </p>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Button */}
+        <div className="flex px-4 py-8 justify-center">
+          {!isStreaming ? (
+            <button
+              onClick={startCamera}
+              disabled={cameraAccess === 'denied'}
+              className="flex min-w-[84px] max-w-[480px] w-64 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                boxShadow: '0 0 15px rgba(255,106,0,0.5)'
+              }}
+            >
+              <span className="truncate">Start Camera</span>
+            </button>
+          ) : !taskStatus?.active ? (
+            <button
+              onClick={startLivenessTask}
+              className="flex min-w-[84px] max-w-[480px] w-64 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
+              style={{
+                boxShadow: '0 0 15px rgba(255,106,0,0.5)'
+              }}
+            >
+              <span className="truncate">Start Verification</span>
+            </button>
+          ) : taskStatus?.result ? (
+            <div className="flex gap-4">
+              <button
+                onClick={handleTryAgain}
+                className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
+                style={{
+                  boxShadow: '0 0 15px rgba(255,106,0,0.5)'
+                }}
+              >
+                <span className="truncate">Try Again</span>
+              </button>
+              {taskStatus.result.final_result && (
+                <Link 
+                  href="/feed"
+                  className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-green-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-green-700 transition-colors"
+                >
+                  <span className="truncate">Continue</span>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleStopCamera}
+              className="flex min-w-[84px] max-w-[480px] w-64 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-red-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-red-700 transition-colors"
+            >
+              <span className="truncate">Stop Camera</span>
+            </button>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

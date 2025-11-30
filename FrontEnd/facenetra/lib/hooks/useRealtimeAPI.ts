@@ -66,6 +66,7 @@ export const useRealtimeAPI = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processingFrameRef = useRef(false);
   const lastFrameTimeRef = useRef(0);
+  const verificationCompleteRef = useRef(false);
 
   const createSession = useCallback(async (): Promise<boolean> => {
     try {
@@ -146,26 +147,37 @@ export const useRealtimeAPI = () => {
     }
   }, []);
 
-  const stopCamera = useCallback(async () => {
+  const stopCamera = useCallback(async (preserveTaskStatus = false) => {
+    console.log('Stopping camera... preserveTaskStatus:', preserveTaskStatus);
     setIsStreaming(false);
     
+    // Clear intervals and animations first
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
     if (taskIntervalRef.current) {
+      console.log('Clearing task interval');
       clearInterval(taskIntervalRef.current);
       taskIntervalRef.current = null;
     }
+    
+    // Stop media streams
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraAccess('Not granted');
+    
+    // End session
     await endSession();
+    
+    // Clear states (but preserve taskStatus if result is shown)
     setDetectionResult(null);
-    setTaskStatus(null);
+    if (!preserveTaskStatus) {
+      setTaskStatus(null);
+    }
     setOffline(false);
     setError(null);
   }, [endSession]);
@@ -271,7 +283,19 @@ export const useRealtimeAPI = () => {
   }, [createSession, getUserMedia, endSession]);
 
   const updateTaskStatus = useCallback(async () => {
-    if (!sessionId) return;
+    // Don't make API call if verification is already complete
+    if (verificationCompleteRef.current) {
+      console.log('🛑 Skipping API call - verification already complete');
+      return;
+    }
+    
+    if (!sessionId) {
+      console.log('🛑 No session ID');
+      return;
+    }
+    
+    // console.log('📡 Making status check API call...');
+    
     try {
       const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
         method: 'POST',
@@ -280,26 +304,55 @@ export const useRealtimeAPI = () => {
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      setTaskStatus(data.session_status || data);
+      
+      // Log the FULL response to understand the structure
+      // console.log('📦 Full API response:', data);
+      
+      // Check both data.session_status and data directly
+      const status = data.session_status || data;
+      
+      // console.log('📊 Status response:', {
+      //   active: status?.active,
+      //   hasResult: !!status?.result,
+      //   completedTasks: status?.completed_tasks,
+      //   totalTasks: status?.total_tasks
+      // });
+      
+      setTaskStatus(status);
       setError(null);
       
-      // Automatically stop camera when task session completes
-      if (data.session_status && !data.session_status.active && data.session_status.result) {
-        console.log('Task session completed, stopping camera...');
-        await stopCamera();
-      }
-      
-      // If task is no longer active, stop polling
-      if (data.session_status && !data.session_status.active) {
+      // If task is no longer active and result is available, stop polling immediately
+      if (status && !status.active && status.result) {
+        console.log('✅ VERIFICATION COMPLETE - Setting completion flag and stopping polling');
+        
+        // Set completion flag FIRST to prevent any more API calls
+        verificationCompleteRef.current = true;
+        
+        // Clear interval IMMEDIATELY to stop API calls
         if (taskIntervalRef.current) {
+          console.log('🔴 Clearing interval');
+          clearInterval(taskIntervalRef.current);
+          taskIntervalRef.current = null;
+        }
+        
+        // Stop camera after a short delay, preserving the task status
+        setTimeout(async () => {
+          console.log('📷 Stopping camera (preserving status)');
+          await stopCamera(true); // true = preserve task status
+        }, 2000);
+      }
+      // If task is no longer active but no result yet, just stop polling
+      else if (status && !status.active) {
+        if (taskIntervalRef.current) {
+          console.log('⚠️ Task no longer active - stopping polling');
           clearInterval(taskIntervalRef.current);
           taskIntervalRef.current = null;
         }
       }
     } catch (err: any) {
-      console.error('Error updating task status:', err);
+      console.error('❌ Error updating task status:', err);
       setError('Failed to update task status: ' + err.message);
-      // Optionally stop polling on persistent errors
+      // Stop polling on persistent errors
       if (taskIntervalRef.current) {
         clearInterval(taskIntervalRef.current);
         taskIntervalRef.current = null;
@@ -313,6 +366,10 @@ export const useRealtimeAPI = () => {
       return;
     }
     try {
+      // Reset completion flag for new task
+      console.log('🔄 Starting new liveness task - resetting completion flag');
+      verificationCompleteRef.current = false;
+      
       const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -321,6 +378,7 @@ export const useRealtimeAPI = () => {
       const data = await response.json();
       if (data.success) {
         setTaskStatus(data.session_status);
+        console.log('🟢 Starting status polling interval (every 100ms)');
         taskIntervalRef.current = setInterval(updateTaskStatus, 100);
       } else {
         setError(data.message);
@@ -336,6 +394,10 @@ export const useRealtimeAPI = () => {
       return;
     }
     try {
+      // Reset completion flag
+      console.log('🔄 Resetting task session - clearing completion flag');
+      verificationCompleteRef.current = false;
+      
       const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -345,6 +407,7 @@ export const useRealtimeAPI = () => {
       if (data.success) {
         setTaskStatus(null);
         if (taskIntervalRef.current) {
+          console.log('🔴 Clearing interval on reset');
           clearInterval(taskIntervalRef.current);
           taskIntervalRef.current = null;
         }
