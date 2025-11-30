@@ -1,0 +1,456 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE USER TABLES
+// ============================================
+
+model User {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  vectorId          String    @unique @map("vector_id")
+  randomId          String    @unique @map("random_id")
+  username          String?   @unique
+  email             String?   @unique
+  phone             String?   @unique
+  fullName          String    @map("full_name")
+  bio               String?
+  profilePictureUrl String?   @map("profile_picture_url")
+  coverPhotoUrl     String?   @map("cover_photo_url")
+  isVerified        Boolean   @default(false) @map("is_verified")
+  isActive          Boolean   @default(true) @map("is_active")
+  privacyLevel      PrivacyLevel @default(PUBLIC) @map("privacy_level")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastLogin         DateTime? @map("last_login")
+
+  // Relations
+  socialLinks       UserSocialLink[]
+  interests         UserInterest[]
+  posts             Post[]
+  photos            UserPhoto[]
+  albums            PhotoAlbum[]
+  connections       Connection[]      @relation("UserConnections")
+  connectedBy       Connection[]      @relation("ConnectedUsers")
+  scansPerformed    ScanHistory[]     @relation("Scanner")
+  scansReceived     ScanHistory[]     @relation("Scanned")
+  likes             Like[]
+  comments          Comment[]
+  faceVectors       FaceVector[]
+  loginSessions     LoginSession[]
+  privacySettings   PrivacySettings?
+  notifications     Notification[]    @relation("NotificationReceiver")
+  sentNotifications Notification[]    @relation("NotificationSender")
+  sentMessages      Message[]         @relation("MessageSender")
+  conversations1    Conversation[]    @relation("Participant1")
+  conversations2    Conversation[]    @relation("Participant2")
+  searchIndex       UserSearchIndex?
+  trendingUser      TrendingUser?
+
+  @@map("users")
+}
+
+model UserSocialLink {
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String           @map("user_id") @db.ObjectId
+  platform   SocialPlatform
+  username   String
+  profileUrl String           @map("profile_url")
+  isVisible  Boolean          @default(true) @map("is_visible")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_social_links")
+}
+
+model UserInterest {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  interest  String
+  category  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_interests")
+}
+
+// ============================================
+// CONTENT TABLES
+// ============================================
+
+model Post {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String     @map("user_id") @db.ObjectId
+  content       String
+  postType      PostType   @map("post_type")
+  visibility    VisibilityType
+  likesCount    Int        @default(0) @map("likes_count")
+  commentsCount Int        @default(0) @map("comments_count")
+  sharesCount   Int        @default(0) @map("shares_count")
+  isPinned      Boolean    @default(false) @map("is_pinned")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media  PostMedia[]
+
+  @@map("posts")
+}
+
+model PostMedia {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  postId     String    @map("post_id") @db.ObjectId
+  mediaUrl   String    @map("media_url")
+  mediaType  MediaType @map("media_type")
+  mediaOrder Int       @map("media_order")
+  width      Int?
+  height     Int?
+  fileSize   Int?      @map("file_size")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_media")
+}
+
+model UserPhoto {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @map("user_id") @db.ObjectId
+  photoUrl         String   @map("photo_url")
+  caption          String?
+  albumId          String?  @map("album_id") @db.ObjectId
+  isProfilePicture Boolean  @default(false) @map("is_profile_picture")
+  isCoverPhoto     Boolean  @default(false) @map("is_cover_photo")
+  likesCount       Int      @default(0) @map("likes_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album PhotoAlbum? @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  @@map("user_photos")
+}
+
+model PhotoAlbum {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @map("user_id") @db.ObjectId
+  albumName      String   @map("album_name")
+  description    String?
+  coverPhotoUrl  String?  @map("cover_photo_url")
+  photoCount     Int      @default(0) @map("photo_count")
+  isPublic       Boolean  @default(true) @map("is_public")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos UserPhoto[]
+
+  @@map("photo_albums")
+}
+
+// ============================================
+// SOCIAL INTERACTION TABLES
+// ============================================
+
+model Connection {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String           @map("user_id") @db.ObjectId
+  connectedUserId  String           @map("connected_user_id") @db.ObjectId
+  connectionType   ConnectionType   @map("connection_type")
+  status           ConnectionStatus
+  createdAt        DateTime         @default(now()) @map("created_at")
+  acceptedAt       DateTime?        @map("accepted_at")
+
+  user          User @relation("UserConnections", fields: [userId], references: [id], onDelete: Cascade)
+  connectedUser User @relation("ConnectedUsers", fields: [connectedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, connectedUserId])
+  @@map("connections")
+}
+
+model ScanHistory {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  scannerId        String   @map("scanner_id") @db.ObjectId
+  scannedId        String   @map("scanned_id") @db.ObjectId
+  scanLatitude     Float?   @map("scan_latitude")
+  scanLongitude    Float?   @map("scan_longitude")
+  scanLocationName String?  @map("scan_location_name")
+  connectionMade   Boolean  @default(false) @map("connection_made")
+  scanConfidence   Float    @map("scan_confidence")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  scanner User @relation("Scanner", fields: [scannerId], references: [id], onDelete: Cascade)
+  scanned User @relation("Scanned", fields: [scannedId], references: [id], onDelete: Cascade)
+
+  @@map("scan_history")
+}
+
+model Like {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String     @map("user_id") @db.ObjectId
+  targetType TargetType @map("target_type")
+  targetId   String     @map("target_id")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@map("likes")
+}
+
+model Comment {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String     @map("user_id") @db.ObjectId
+  targetType      TargetType @map("target_type")
+  targetId        String     @map("target_id")
+  parentCommentId String?    @map("parent_comment_id") @db.ObjectId
+  content         String
+  likesCount      Int        @default(0) @map("likes_count")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+// ============================================
+// SEARCH & DISCOVERY TABLES
+// ============================================
+
+model UserSearchIndex {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @unique @map("user_id") @db.ObjectId
+  searchText   String   @map("search_text") // Combined searchable text
+  location     String?
+  ageRange     String?  @map("age_range")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_search_index")
+}
+
+model TrendingUser {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @unique @map("user_id") @db.ObjectId
+  score              Float
+  scanCount24h       Int      @default(0) @map("scan_count_24h")
+  newConnections24h  Int      @default(0) @map("new_connections_24h")
+  rank               Int
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trending_users")
+}
+
+// ============================================
+// SECURITY & PRIVACY TABLES
+// ============================================
+
+model FaceVector {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @map("user_id") @db.ObjectId
+  vectorEmbedding  Bytes    @map("vector_embedding") // Encrypted face embedding
+  vectorVersion    String   @map("vector_version")
+  isPrimary        Boolean  @default(true) @map("is_primary")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("face_vectors")
+}
+
+model LoginSession {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String      @map("user_id") @db.ObjectId
+  jwtTokenHash     String      @map("jwt_token_hash")
+  refreshTokenHash String      @map("refresh_token_hash")
+  deviceInfo       Json        @map("device_info")
+  ipAddress        String      @map("ip_address")
+  loginMethod      LoginMethod @map("login_method")
+  isActive         Boolean     @default(true) @map("is_active")
+  expiresAt        DateTime    @map("expires_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_sessions")
+}
+
+model PrivacySettings {
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String              @unique @map("user_id") @db.ObjectId
+  profileVisibility  PrivacyLevel        @default(PUBLIC) @map("profile_visibility")
+  showInSearch       Boolean             @default(true) @map("show_in_search")
+  allowScanDiscovery Boolean             @default(true) @map("allow_scan_discovery")
+  showSocialLinks    Boolean             @default(true) @map("show_social_links")
+  showLocation       Boolean             @default(false) @map("show_location")
+  allowMessagesFrom  MessagePrivacy      @default(EVERYONE) @map("allow_messages_from")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("privacy_settings")
+}
+
+// ============================================
+// NOTIFICATIONS & MESSAGING
+// ============================================
+
+model Notification {
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String           @map("user_id") @db.ObjectId
+  type       NotificationType
+  fromUserId String           @map("from_user_id") @db.ObjectId
+  content    String
+  targetType String?          @map("target_type")
+  targetId   String?          @map("target_id")
+  isRead     Boolean          @default(false) @map("is_read")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user     User @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User @relation("NotificationSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Conversation {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  participant1Id  String    @map("participant_1_id") @db.ObjectId
+  participant2Id  String    @map("participant_2_id") @db.ObjectId
+  lastMessageAt   DateTime? @map("last_message_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  participant1 User      @relation("Participant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2 User      @relation("Participant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages     Message[]
+
+  @@unique([participant1Id, participant2Id])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String   @map("conversation_id") @db.ObjectId
+  senderId       String   @map("sender_id") @db.ObjectId
+  content        String
+  isRead         Boolean  @default(false) @map("is_read")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum PrivacyLevel {
+  PUBLIC
+  PRIVATE
+  FRIENDS_ONLY
+
+  @@map("privacy_level")
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  FACEBOOK
+  GITHUB
+  TIKTOK
+  YOUTUBE
+
+  @@map("social_platform")
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  LINK
+
+  @@map("post_type")
+}
+
+enum VisibilityType {
+  PUBLIC
+  PRIVATE
+  FRIENDS_ONLY
+
+  @@map("visibility_type")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+
+  @@map("media_type")
+}
+
+enum ConnectionType {
+  FRIEND
+  FOLLOWING
+  BLOCKED
+
+  @@map("connection_type")
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+
+  @@map("connection_status")
+}
+
+enum TargetType {
+  POST
+  PHOTO
+  COMMENT
+
+  @@map("target_type")
+}
+
+enum LoginMethod {
+  FACE_SCAN
+  FALLBACK_EMAIL
+  FALLBACK_PHONE
+
+  @@map("login_method")
+}
+
+enum MessagePrivacy {
+  EVERYONE
+  FRIENDS_ONLY
+  NONE
+
+  @@map("message_privacy")
+}
+
+enum NotificationType {
+  SCAN
+  CONNECTION_REQUEST
+  CONNECTION_ACCEPTED
+  LIKE
+  COMMENT
+  MENTION
+
+  @@map("notification_type")
+}
