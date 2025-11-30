@@ -78,7 +78,13 @@ export default function RealtimePage() {
                 <Camera className="w-6 h-6 mr-2 text-purple-400" />
                 Live Camera Feed
               </h2>
-              <VideoContainer videoRef={videoRef} canvasRef={canvasRef} isStreaming={isStreaming} />
+              <VideoContainer 
+                videoRef={videoRef} 
+                canvasRef={canvasRef} 
+                isStreaming={isStreaming}
+                completedTasks={taskStatus?.completed_tasks || 0}
+                totalTasks={taskStatus?.total_tasks || 0}
+              />
               {!isStreaming && (
                 <div className="text-center text-gray-400 mt-4">
                   <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />

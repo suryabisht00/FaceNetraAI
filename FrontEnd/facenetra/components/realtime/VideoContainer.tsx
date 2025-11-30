@@ -8,20 +8,40 @@ interface VideoContainerProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   isStreaming: boolean;
   headDirection?: string;
+  completedTasks?: number;
+  totalTasks?: number;
 }
 
 const VideoContainer = forwardRef<HTMLDivElement, VideoContainerProps>(
-  ({ videoRef, canvasRef, isStreaming, headDirection = 'Forward' }, ref) => (
-    <div ref={ref} className="relative flex items-center justify-center w-full max-w-sm aspect-square mx-auto">
-      {/* Orange glowing ring */}
-      <div className="absolute inset-0 rounded-full border-4 border-[#ff6a00]" 
+  ({ videoRef, canvasRef, isStreaming, headDirection = 'Forward', completedTasks = 0, totalTasks = 0 }, ref) => {
+    // Determine border color and glow based on task completion
+    const hasActiveTasks = totalTasks > 0;
+    const hasCompletedTasks = completedTasks > 0;
+    
+    // Show green for each completed task, orange for active tasks
+    const borderColor = hasActiveTasks && hasCompletedTasks
+      ? 'border-green-500' 
+      : hasActiveTasks
+      ? 'border-[#ff6a00]'
+      : 'border-gray-500';
+    
+    const boxShadowColor = hasActiveTasks && hasCompletedTasks
+      ? '0 0 15px 5px rgba(34, 197, 94, 0.4), 0 0 30px 10px rgba(34, 197, 94, 0.3)'
+      : hasActiveTasks
+      ? '0 0 15px 5px rgba(255, 106, 0, 0.3), 0 0 30px 10px rgba(255, 106, 0, 0.2)'
+      : '0 0 10px 2px rgba(156, 163, 175, 0.2)';
+    
+    return (
+    <>
+      {/* Glowing ring with dynamic color - turns green when tasks are completed */}
+      <div className={`absolute inset-0 rounded-full border-4 ${borderColor} transition-all duration-500`}
            style={{
-             boxShadow: '0 0 15px 5px rgba(255, 106, 0, 0.3), 0 0 30px 10px rgba(255, 106, 0, 0.2)'
+             boxShadow: boxShadowColor
            }}>
       </div>
       
       {/* Camera feed circle */}
-      <div className="w-[90%] h-[90%] rounded-full overflow-hidden bg-black/50 flex items-center justify-center">
+      <div className="w-[90%] h-[90%] bg-center bg-no-repeat bg-cover aspect-square rounded-full overflow-hidden bg-black/50 flex items-center justify-center flex-1">
         <video
           ref={videoRef}
           autoPlay
@@ -38,17 +58,9 @@ const VideoContainer = forwardRef<HTMLDivElement, VideoContainerProps>(
       </div>
       
       <canvas ref={canvasRef} className="hidden" />
-      
-      {/* Head direction overlay - shown when streaming */}
-      {isStreaming && (
-        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 text-center">
-          <h2 className="text-[#E5E7EB] text-2xl font-bold">
-            Current Head Direction: {headDirection}
-          </h2>
-        </div>
-      )}
-    </div>
-  )
+    </>
+  );
+  }
 );
 VideoContainer.displayName = 'VideoContainer';
 

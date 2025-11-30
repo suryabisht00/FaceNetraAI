@@ -40,27 +40,18 @@ export default function LoginPage() {
     stopCamera(false); // false = don't preserve task status
   };
 
+  // Handle retake verification - refresh the page
+  const handleRetakeVerification = () => {
+    window.location.reload();
+  };
+
   return (
-    <div className="min-h-screen bg-[#0B0F1A] p-4">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-10 py-3 max-w-[960px] mx-auto">
-        <div className="flex items-center gap-4 text-white">
-          <div className="w-6 h-6">
-            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
-            </svg>
-          </div>
-          <h2 className="text-white text-xl font-bold">AURA</h2>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/" className="flex cursor-pointer items-center justify-center rounded-xl h-10 bg-white/10 text-white min-w-0 px-2.5 hover:bg-white/20 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </div>
-      </header>
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#0B0F1A]">
+      <div className="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
+        <div className="layout-content-container flex flex-col w-full max-w-[960px] flex-1">
 
       {/* Main Content */}
-      <main className="flex flex-col items-center justify-center flex-grow py-8 px-4 text-center max-w-[960px] mx-auto">
+      <main className="flex flex-col items-center justify-center flex-grow py-8 px-4 text-center">
         {/* Error Display */}
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6 w-full max-w-md">
@@ -74,23 +65,25 @@ export default function LoginPage() {
         {/* Title - only show when not streaming */}
         {!isStreaming && (
           <>
-            <h1 className="text-[#E5E7EB] text-[24px] sm:text-[32px] font-bold leading-tight px-4 text-center pb-3 pt-6">
+            {/* <h1 className="text-[#E5E7EB] tracking-light text-[24px] sm:text-[32px] font-bold leading-tight px-4 text-center pb-3 pt-6">
               Current Head Direction: {headDirection}
-            </h1>
-            <p className="text-[#E5E7EB]/70 text-base mb-8">
+            </h1> */}
+            {/* <p className="text-[#E5E7EB]/70 text-base mb-8">
               {currentTaskDescription}
-            </p>
+            </p> */}
           </>
         )}
 
         {/* Camera Feed with circular design - hide when result is available */}
         {!taskStatus?.result && (
-          <div className="my-6 w-full">
+          <div className="relative flex items-center justify-center w-full max-w-sm aspect-square my-6 mx-auto">
             <VideoContainer 
               videoRef={videoRef} 
               canvasRef={canvasRef} 
               isStreaming={isStreaming}
               headDirection={headDirection}
+              completedTasks={taskStatus?.completed_tasks || 0}
+              totalTasks={taskStatus?.total_tasks || 0}
             />
           </div>
         )}
@@ -237,31 +230,61 @@ export default function LoginPage() {
               Please complete the following actions:
             </p>
             <div className="px-4">
-              {taskStatus.tasks.map((task: string, index: number) => (
-                <label key={index} className="flex gap-x-3 py-3 flex-row items-center">
-                  <input
-                    type="checkbox"
-                    checked={index < (taskStatus.completed_tasks || 0)}
-                    disabled
-                    className="h-5 w-5 rounded border-[#6b472e] border-2 bg-transparent text-[#ff6a00] checked:bg-[#ff6a00] checked:border-[#ff6a00] focus:ring-0 focus:ring-offset-0 focus:border-[#ff6a00]/50 focus:outline-none"
-                    style={{
-                      backgroundImage: index < (taskStatus.completed_tasks || 0) 
-                        ? "url('data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e')"
-                        : 'none'
-                    }}
-                  />
-                  <p className="text-white text-base font-normal leading-normal">
-                    {task}
-                  </p>
-                </label>
-              ))}
+              {taskStatus.tasks.map((task: string, index: number) => {
+                const isCompleted = index < (taskStatus.completed_tasks || 0);
+                return (
+                  <label key={index} className="flex gap-x-3 py-3 flex-row items-center">
+                    <input
+                      type="checkbox"
+                      checked={isCompleted}
+                      disabled
+                      className={`h-5 w-5 rounded border-2 appearance-none focus:ring-0 focus:ring-offset-0 focus:outline-none transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-green-500 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
+                          : 'bg-transparent border-[#6b472e]'
+                      }`}
+                      style={{
+                        backgroundImage: isCompleted
+                          ? "url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27white%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e')"
+                          : 'none',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center',
+                      }}
+                    />
+                    <p className="text-white text-base font-normal leading-normal">
+                      {task}
+                    </p>
+                  </label>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Action Button */}
         <div className="flex px-4 py-8 justify-center">
-          {!isStreaming ? (
+          {taskStatus?.result ? (
+            // Show buttons when result is available
+            <div className="flex gap-4">
+              <button
+                onClick={handleRetakeVerification}
+                className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
+                style={{
+                  boxShadow: '0 0 15px rgba(255,106,0,0.5)'
+                }}
+              >
+                <span className="truncate">Retake Verification</span>
+              </button>
+              {taskStatus.result.final_result && (
+                <Link 
+                  href="/feed"
+                  className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-green-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-green-700 transition-colors"
+                >
+                  <span className="truncate">Continue</span>
+                </Link>
+              )}
+            </div>
+          ) : !isStreaming ? (
             <button
               onClick={startCamera}
               disabled={cameraAccess === 'denied'}
@@ -282,26 +305,6 @@ export default function LoginPage() {
             >
               <span className="truncate">Start Verification</span>
             </button>
-          ) : taskStatus?.result ? (
-            <div className="flex gap-4">
-              <button
-                onClick={handleTryAgain}
-                className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
-                style={{
-                  boxShadow: '0 0 15px rgba(255,106,0,0.5)'
-                }}
-              >
-                <span className="truncate">Try Again</span>
-              </button>
-              {taskStatus.result.final_result && (
-                <Link 
-                  href="/feed"
-                  className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-green-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-green-700 transition-colors"
-                >
-                  <span className="truncate">Continue</span>
-                </Link>
-              )}
-            </div>
           ) : (
             <button
               onClick={handleStopCamera}
@@ -312,6 +315,8 @@ export default function LoginPage() {
           )}
         </div>
       </main>
+        </div>
+      </div>
     </div>
   );
 }

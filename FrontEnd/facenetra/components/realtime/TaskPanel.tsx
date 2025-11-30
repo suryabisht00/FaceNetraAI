@@ -50,14 +50,28 @@ export const TaskPanel = ({ taskStatus }: TaskPanelProps) => {
         {taskStatus.active ? taskStatus.current_task?.description || 'Preparing...' : taskStatus.result?.final_result ? 'PASSED!' : 'FAILED!'}
       </div>
       <div className="flex gap-2 flex-wrap mb-3">
-        {taskStatus.tasks?.map((task: string, index: number) => (
-          <div
-            key={index}
-            className={`px-3 py-1 rounded-full text-xs transition-colors duration-75 ${index < (taskStatus.completed_tasks || 0) ? 'bg-green-500 text-white' : index === (taskStatus.completed_tasks || 0) ? 'bg-orange-500 text-white animate-pulse' : 'bg-gray-600 text-gray-300'}`}
-          >
-            {task}
-          </div>
-        ))}
+        {taskStatus.tasks?.map((task: string, index: number) => {
+          const isCompleted = index < (taskStatus.completed_tasks || 0);
+          const isCurrent = index === (taskStatus.completed_tasks || 0);
+          
+          return (
+            <div
+              key={index}
+              className={`px-3 py-1 rounded-full text-xs transition-colors duration-75 flex items-center gap-1 ${
+                isCompleted
+                  ? 'bg-green-500 text-white'
+                  : isCurrent
+                  ? 'bg-orange-500 text-white animate-pulse'
+                  : 'bg-gray-600 text-gray-300'
+              }`}
+            >
+              {isCompleted && (
+                <CheckCircle className="w-3 h-3" />
+              )}
+              {task}
+            </div>
+          );
+        })}
       </div>
       {taskStatus.result && (
         <>
