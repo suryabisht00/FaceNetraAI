@@ -161,7 +161,7 @@ export default function LoginPage() {
                   
                   {/* Current Task Display */}
                   {taskStatus.active && (
-                    <div className="text-2xl font-bold text-center text-blue-400 my-4 py-3 bg-blue-900/30 rounded-lg">
+                    <div className="text-2xl font-bold text-center text-blue-400 my-4 py-3 bg-blue-900/30 rounded-lg transition-all duration-75">
                       {taskStatus.current_task?.description || 'Preparing...'}
                     </div>
                   )}
@@ -171,7 +171,7 @@ export default function LoginPage() {
                     {taskStatus.tasks?.map((task: string, index: number) => (
                       <div
                         key={index}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-75 ${
                           index < (taskStatus.completed_tasks || 0)
                             ? 'bg-green-500 text-white'
                             : index === (taskStatus.completed_tasks || 0) && taskStatus.active

@@ -61,50 +61,11 @@ export const useRealtimeAPI = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const taskIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processingFrameRef = useRef(false);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (statusIntervalRef.current) {
-        clearInterval(statusIntervalRef.current);
-      }
-      if (taskIntervalRef.current) {
-        clearInterval(taskIntervalRef.current);
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      endSession();
-    };
-  }, []);
-
-  // Handle page visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && isStreaming) {
-        // Page is hidden, slow down processing
-        if (statusIntervalRef.current) {
-          clearInterval(statusIntervalRef.current);
-          statusIntervalRef.current = setInterval(captureAndProcessFrame, 500);
-        }
-      } else if (!document.hidden && isStreaming) {
-        // Page is visible, resume normal processing
-        if (statusIntervalRef.current) {
-          clearInterval(statusIntervalRef.current);
-          statusIntervalRef.current = setInterval(captureAndProcessFrame, 100);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isStreaming]);
+  const lastFrameTimeRef = useRef(0);
 
   const createSession = useCallback(async (): Promise<boolean> => {
     try {
@@ -185,12 +146,45 @@ export const useRealtimeAPI = () => {
     }
   }, []);
 
+  const stopCamera = useCallback(async () => {
+    setIsStreaming(false);
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (taskIntervalRef.current) {
+      clearInterval(taskIntervalRef.current);
+      taskIntervalRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraAccess('Not granted');
+    await endSession();
+    setDetectionResult(null);
+    setTaskStatus(null);
+    setOffline(false);
+    setError(null);
+  }, [endSession]);
+
   const captureAndProcessFrame = useCallback(async () => {
-    if (!sessionId || !videoRef.current || !canvasRef.current || processingFrameRef.current) return;
+    if (!sessionId || !videoRef.current || !canvasRef.current) return;
     if (videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) return;
+    if (processingFrameRef.current) return;
+
+    const now = Date.now();
+    const timeSinceLastFrame = now - lastFrameTimeRef.current;
+    
+    // Throttle to ~20 FPS (50ms between frames) for faster UI updates
+    if (timeSinceLastFrame < 50) return;
 
     try {
       processingFrameRef.current = true;
+      lastFrameTimeRef.current = now;
+      
       const ctx = canvasRef.current.getContext('2d')!;
       ctx.drawImage(videoRef.current, 0, 0);
       const frameData = canvasRef.current.toDataURL('image/jpeg', 0.6);
@@ -222,7 +216,50 @@ export const useRealtimeAPI = () => {
     } finally {
       processingFrameRef.current = false;
     }
-  }, [sessionId]);
+  }, [sessionId, stopCamera]);
+
+  // Continuous frame processing loop using requestAnimationFrame
+  const frameLoop = useCallback(() => {
+    captureAndProcessFrame();
+    if (isStreaming) {
+      animationFrameRef.current = requestAnimationFrame(frameLoop);
+    }
+  }, [isStreaming, captureAndProcessFrame]);
+
+  // Start the frame loop when streaming begins
+  useEffect(() => {
+    if (isStreaming) {
+      lastFrameTimeRef.current = Date.now();
+      animationFrameRef.current = requestAnimationFrame(frameLoop);
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isStreaming, frameLoop]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (taskIntervalRef.current) {
+        clearInterval(taskIntervalRef.current);
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const startCamera = useCallback(async () => {
     if (!(await createSession())) return;
@@ -231,82 +268,7 @@ export const useRealtimeAPI = () => {
       return;
     }
     setIsStreaming(true);
-    setTimeout(() => {
-      statusIntervalRef.current = setInterval(captureAndProcessFrame, 100);
-    }, 1000);
-  }, [createSession, getUserMedia, endSession, captureAndProcessFrame]);
-
-  const stopCamera = useCallback(async () => {
-    if (statusIntervalRef.current) {
-      clearInterval(statusIntervalRef.current);
-      statusIntervalRef.current = null;
-    }
-    if (taskIntervalRef.current) {
-      clearInterval(taskIntervalRef.current);
-      taskIntervalRef.current = null;
-    }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      mediaStreamRef.current = null;
-    }
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setIsStreaming(false);
-    setCameraAccess('Not granted');
-    await endSession();
-    setDetectionResult(null);
-    setTaskStatus(null);
-    setOffline(false);
-    setError(null);
-  }, [endSession]);
-
-  const startLivenessTask = useCallback(async () => {
-    if (!sessionId) {
-      setError('No active session. Start camera first.');
-      return;
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start' }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setTaskStatus(data.session_status);
-        taskIntervalRef.current = setInterval(updateTaskStatus, 200);
-      } else {
-        setError(data.message);
-      }
-    } catch (err: any) {
-      setError('Error starting liveness task: ' + err.message);
-    }
-  }, [sessionId]);
-
-  const resetTaskSession = useCallback(async () => {
-    if (!sessionId) {
-      setError('No active session.');
-      return;
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setTaskStatus(null);
-        if (taskIntervalRef.current) {
-          clearInterval(taskIntervalRef.current);
-          taskIntervalRef.current = null;
-        }
-      } else {
-        setError(data.message);
-      }
-    } catch (err: any) {
-      setError('Error resetting task session: ' + err.message);
-    }
-  }, [sessionId]);
+  }, [createSession, getUserMedia, endSession]);
 
   const updateTaskStatus = useCallback(async () => {
     if (!sessionId) return;
@@ -345,6 +307,55 @@ export const useRealtimeAPI = () => {
     }
   }, [sessionId, stopCamera]);
 
+  const startLivenessTask = useCallback(async () => {
+    if (!sessionId) {
+      setError('No active session. Start camera first.');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTaskStatus(data.session_status);
+        taskIntervalRef.current = setInterval(updateTaskStatus, 100);
+      } else {
+        setError(data.message);
+      }
+    } catch (err: any) {
+      setError('Error starting liveness task: ' + err.message);
+    }
+  }, [sessionId, updateTaskStatus]);
+
+  const resetTaskSession = useCallback(async () => {
+    if (!sessionId) {
+      setError('No active session.');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTaskStatus(null);
+        if (taskIntervalRef.current) {
+          clearInterval(taskIntervalRef.current);
+          taskIntervalRef.current = null;
+        }
+      } else {
+        setError(data.message);
+      }
+    } catch (err: any) {
+      setError('Error resetting task session: ' + err.message);
+    }
+  }, [sessionId]);
+
   return {
     isStreaming,
     sessionId,
@@ -361,4 +372,3 @@ export const useRealtimeAPI = () => {
     resetTaskSession,
   };
 };
- 

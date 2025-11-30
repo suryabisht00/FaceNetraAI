@@ -37,7 +37,7 @@ export const TaskPanel = ({ taskStatus }: TaskPanelProps) => {
   if (!taskStatus) return null;
 
   return (
-    <div className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 ${taskStatus.active ? 'border-orange-500 animate-pulse' : taskStatus.result?.final_result ? 'border-green-500' : 'border-red-500'}`}>
+    <div className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 transition-colors duration-100 ${taskStatus.active ? 'border-orange-500' : taskStatus.result?.final_result ? 'border-green-500' : 'border-red-500'}`}>
       <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
         <Clock className="w-6 h-6 mr-2 text-orange-400" />
         Liveness Verification Tasks
@@ -46,14 +46,14 @@ export const TaskPanel = ({ taskStatus }: TaskPanelProps) => {
         <span className="text-gray-300">{taskStatus.active ? `Task ${(taskStatus.completed_tasks || 0) + 1}/${taskStatus.total_tasks || 0}` : 'Session Complete'}</span>
         <span className="font-bold text-orange-400">{taskStatus.active ? `${Math.ceil(taskStatus.time_remaining || 0)}s` : `${taskStatus.result?.duration?.toFixed(1) || '0.0'}s`}</span>
       </div>
-      <div className="text-xl font-bold text-center mb-3 text-blue-400">
+      <div className="text-xl font-bold text-center mb-3 text-blue-400 transition-all duration-75">
         {taskStatus.active ? taskStatus.current_task?.description || 'Preparing...' : taskStatus.result?.final_result ? 'PASSED!' : 'FAILED!'}
       </div>
       <div className="flex gap-2 flex-wrap mb-3">
         {taskStatus.tasks?.map((task: string, index: number) => (
           <div
             key={index}
-            className={`px-3 py-1 rounded-full text-xs ${index < (taskStatus.completed_tasks || 0) ? 'bg-green-500 text-white' : index === (taskStatus.completed_tasks || 0) ? 'bg-orange-500 text-white animate-pulse' : 'bg-gray-600 text-gray-300'}`}
+            className={`px-3 py-1 rounded-full text-xs transition-colors duration-75 ${index < (taskStatus.completed_tasks || 0) ? 'bg-green-500 text-white' : index === (taskStatus.completed_tasks || 0) ? 'bg-orange-500 text-white animate-pulse' : 'bg-gray-600 text-gray-300'}`}
           >
             {task}
           </div>
