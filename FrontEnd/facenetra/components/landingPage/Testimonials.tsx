@@ -60,7 +60,7 @@ export default function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className={`flex flex-col gap-5 p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+              className={`flex flex-col gap-5 p-8 rounded-3xl border border-white/10 bg-linear-to-br from-white/5 to-transparent backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
               style={{ transitionDelay: `${200 + index * 150}ms` }}
             >
               <div className="flex items-center gap-4">

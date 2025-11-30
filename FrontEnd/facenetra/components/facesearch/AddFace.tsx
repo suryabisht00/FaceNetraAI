@@ -26,10 +26,10 @@ export default function AddFace() {
         <User className="w-8 h-8 text-blue-500" />
         Add Face to Database
       </h2>
-      <div className="max-w-md mx-auto bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl shadow-lg border border-blue-200">
+      <div className="max-w-md mx-auto bg-linear-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl shadow-lg border border-blue-200">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+            <label className="flex text-sm font-semibold mb-2 text-gray-700 items-center gap-2">
               <Upload className="w-4 h-4" />
               Select Image:
             </label>
@@ -42,7 +42,7 @@ export default function AddFace() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+            <label className="text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
               <User className="w-4 h-4" />
               Person Name:
             </label>
@@ -56,7 +56,7 @@ export default function AddFace() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+            <label className="text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Metadata (optional):
             </label>
@@ -68,7 +68,7 @@ export default function AddFace() {
               className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
+          <Button type="submit" disabled={loading} className="w-full bg-linear-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
             {loading ? 'Adding...' : 'Add Face'}
           </Button>
         </form>

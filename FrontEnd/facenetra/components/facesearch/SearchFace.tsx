@@ -25,10 +25,10 @@ export default function SearchFace() {
         <Search className="w-8 h-8 text-purple-500" />
         Search Similar Faces
       </h2>
-      <div className="max-w-md mx-auto bg-gradient-to-br from-purple-50 to-pink-100 p-6 rounded-2xl shadow-lg border border-purple-200">
+      <div className="max-w-md mx-auto bg-linear-to-br from-purple-50 to-pink-100 p-6 rounded-2xl shadow-lg border border-purple-200">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+            <label className="flex text-sm font-semibold mb-2 text-gray-700 items-center gap-2">
               <Upload className="w-4 h-4" />
               Select Image:
             </label>
@@ -41,7 +41,7 @@ export default function SearchFace() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+            <label className="text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
               <Sliders className="w-4 h-4" />
               Similarity Threshold: {threshold}
             </label>
@@ -55,7 +55,7 @@ export default function SearchFace() {
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
+          <Button type="submit" disabled={loading} className="w-full bg-linear-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
             {loading ? 'Searching...' : 'Search'}
           </Button>
         </form>

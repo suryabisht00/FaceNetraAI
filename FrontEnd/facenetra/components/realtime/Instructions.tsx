@@ -10,11 +10,11 @@ export const Instructions = () => (
     </h3>
     <ul className="list-disc list-inside space-y-2 text-gray-300">
       <li className="flex items-start">
-        <Camera className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+        <Camera className="w-4 h-4 mr-2 mt-0.5 shrink-0" />
         Click &quot;Start Camera&quot; to begin real-time detection
       </li>
       <li className="flex items-start">
-        <Eye className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+        <Eye className="w-4 h-4 mr-2 mt-0.5 shrink-0" />
         Grant camera permissions when prompted
       </li>
       <li>Position your face clearly in front of the camera</li>
@@ -24,7 +24,7 @@ export const Instructions = () => (
       <li>Click &quot;Start Liveness&quot; to begin verification tasks</li>
       <li>Follow the on-screen instructions for liveness verification</li>
       <li className="flex items-start">
-        <AlertTriangle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+        <AlertTriangle className="w-4 h-4 mr-2 mt-0.5 shrink-0" />
         Click &quot;Stop Camera&quot; when finished
       </li>
     </ul>

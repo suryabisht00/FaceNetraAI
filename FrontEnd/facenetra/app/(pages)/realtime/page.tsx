@@ -29,7 +29,7 @@ export default function RealtimePage() {
   } = useRealtimeAPI();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -46,7 +46,7 @@ export default function RealtimePage() {
         {/* Error Display */}
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6">
-            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
             <div>
               <strong>Error:</strong> {error}
             </div>

@@ -37,7 +37,7 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop Header */}
-      <header className={`hidden md:flex w-full items-center justify-between whitespace-nowrap backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl px-6 py-2 fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] lg:max-w-[1280px] transition-all duration-300 ${
+      <header className={`hidden md:flex w-full items-center justify-between whitespace-nowrap backdrop-blur-md bg-[#0B0F1A]/80 border border-primary/20 rounded-2xl px-6 py-2 fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] lg:max-w-7xl transition-all duration-300 ${
         isVisible ? 'top-5 opacity-100' : '-top-24 opacity-0'
       }`}>
         <div className="flex items-center gap-3 py-1">
@@ -91,7 +91,7 @@ export default function Navbar() {
       <div className={`md:hidden fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0B0F1A]/80 border-b border-primary/20 px-4 py-3 shadow-lg transition-all duration-300 ${
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}>
-        <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'cursive' }}>FaceNetraAI</h1>
           <div className="flex items-center gap-3">
             {pathname === '/' ? (

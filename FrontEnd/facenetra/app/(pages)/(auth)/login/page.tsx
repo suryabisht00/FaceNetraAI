@@ -51,11 +51,11 @@ export default function LoginPage() {
         <div className="layout-content-container flex flex-col w-full max-w-[960px] flex-1">
 
       {/* Main Content */}
-      <main className="flex flex-col items-center justify-center flex-grow py-8 px-4 text-center">
+      <main className="flex flex-col items-center justify-center grow py-8 px-4 text-center">
         {/* Error Display */}
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center mb-6 w-full max-w-md">
-            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
             <div>
               <strong>Error:</strong> {error}
             </div>
@@ -112,8 +112,8 @@ export default function LoginPage() {
         {taskStatus?.result && (
           <div className={`w-full max-w-md mb-6 p-8 rounded-3xl border-2 ${
             taskStatus.result.final_result
-              ? 'bg-gradient-to-br from-green-900/80 to-green-800/60 border-green-500'
-              : 'bg-gradient-to-br from-red-900/80 to-red-800/60 border-red-500'
+              ? 'bg-linear-to-br from-green-900/80 to-green-800/60 border-green-500'
+              : 'bg-linear-to-br from-red-900/80 to-red-800/60 border-red-500'
           } backdrop-blur-sm shadow-2xl`}
           style={{
             boxShadow: taskStatus.result.final_result
@@ -268,7 +268,7 @@ export default function LoginPage() {
             <div className="flex gap-4">
               <button
                 onClick={handleRetakeVerification}
-                className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
+                className="flex min-w-[84px] max-w-60 w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-[#ff6a00] text-white text-lg font-bold tracking-[0.015em] hover:bg-[#ff7a10] transition-colors"
                 style={{
                   boxShadow: '0 0 15px rgba(255,106,0,0.5)'
                 }}
@@ -278,7 +278,7 @@ export default function LoginPage() {
               {taskStatus.result.final_result && (
                 <Link 
                   href="/feed"
-                  className="flex min-w-[84px] max-w-[240px] w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-green-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-green-700 transition-colors"
+                  className="flex min-w-[84px] max-w-60 w-48 cursor-pointer items-center justify-center rounded-2xl h-14 px-5 bg-green-600 text-white text-lg font-bold tracking-[0.015em] hover:bg-green-700 transition-colors"
                 >
                   <span className="truncate">Continue</span>
                 </Link>
