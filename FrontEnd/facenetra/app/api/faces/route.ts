@@ -1,7 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = 'http://localhost:5000';
-const API_KEY = 'dz_live_2024_secure_api_key_xyz789';
+const API_BASE_URL = process.env.FACE_RECOGNITION_API_URL;
+const API_KEY = process.env.FACE_RECOGNITION_API_KEY ;
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,11 +14,11 @@ export async function POST(request: NextRequest) {
       backendFormData.append(key, value);
     }
 
+    const headers = new Headers();
+    if (API_KEY) headers.append('X-API-Key', API_KEY);
     const response = await fetch(`${API_BASE_URL}/faces`, {
       method: 'POST',
-      headers: {
-        'X-API-Key': API_KEY,
-      },
+      headers,
       body: backendFormData,
     });
 

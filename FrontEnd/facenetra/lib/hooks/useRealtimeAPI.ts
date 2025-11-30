@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 const API_BASE_URL = '/api/proxy'; // Use Next.js API proxy
-const API_KEY = 'dz_live_2024_secure_api_key_xyz789';
+const API_KEY = process.env.FACE_RECOGNITION_API_KEY;
 
 interface DetectionResult {
   status: string;
