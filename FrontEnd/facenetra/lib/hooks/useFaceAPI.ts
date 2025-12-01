@@ -2,10 +2,17 @@ import { useState } from 'react';
 
 const API_BASE_URL = '/api'; // Use Next.js API proxy
 
+export interface FaceSearchResult {
+  vectorId: string | null;
+  matchScore: number;
+  message: string;
+}
+
 export const useFaceAPI = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(true);
+  const [searchResult, setSearchResult] = useState<FaceSearchResult | null>(null);
 
   const addFace = async (image: File, name: string, metadata: string) => {
     setLoading(true);
@@ -40,6 +47,7 @@ export const useFaceAPI = () => {
   const searchFace = async (image: File, threshold: number) => {
     setLoading(true);
     setResult(null);
+    setSearchResult(null);
     const formData = new FormData();
     formData.append('action', 'search');
     formData.append('image', image);
@@ -52,21 +60,35 @@ export const useFaceAPI = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        const score = data.match_score ? `${(data.match_score * 100).toFixed(1)}%` : '0%';
-        const userId = data.matched_user_id || 'None';
-        setResult(`Match Score: ${score}, Matched User ID: ${userId}`);
-        setIsSuccess(true);
+        const matchScore = data.match_score || 0;
+        const vectorId = data.matched_user_id || null;
+        const score = `${(matchScore * 100).toFixed(1)}%`;
+        
+        setSearchResult({
+          vectorId,
+          matchScore,
+          message: vectorId 
+            ? `Match found with ${score} confidence` 
+            : 'No matching face found'
+        });
+        
+        setResult(vectorId ? `Match Score: ${score}` : 'No matching face found');
+        setIsSuccess(!!vectorId);
+        
+        return { vectorId, matchScore };
       } else {
         setResult(`❌ Error: ${data.error || 'Search failed'}`);
         setIsSuccess(false);
+        return { vectorId: null, matchScore: 0 };
       }
     } catch (error: any) {
       setResult(`❌ Error: ${error.message}`);
       setIsSuccess(false);
+      return { vectorId: null, matchScore: 0 };
     } finally {
       setLoading(false);
     }
   };
 
-  return { loading, result, isSuccess, addFace, searchFace };
+  return { loading, result, isSuccess, addFace, searchFace, searchResult };
 };

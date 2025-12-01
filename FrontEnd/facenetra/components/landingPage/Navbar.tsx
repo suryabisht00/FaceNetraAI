@@ -80,9 +80,9 @@ export default function Navbar() {
             <li>
               <a
                 className="relative text-sm font-medium leading-normal px-5 py-2.5 rounded-xl transition-all hover:text-white hover:bg-primary/10 group"
-                href="#scan"
+                href="/search-users"
               >
-                Scan
+                Search
                 <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary rounded-full transition-all group-hover:w-8"></span>
               </a>
             </li>
@@ -225,10 +225,10 @@ export default function Navbar() {
           <li className="flex-1">
             <a
               className="flex flex-col items-center py-1.5 px-2 text-white hover:text-primary transition-all active:scale-95 rounded-xl hover:bg-primary/10"
-              href="#scan"
-              onClick={() => setActiveTab('scan')}
+              href="/search-users"
+              onClick={() => setActiveTab('search')}
             >
-              <svg className="w-6 h-6" fill={activeTab === 'scan' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill={activeTab === 'search' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </a>
