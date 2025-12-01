@@ -15,7 +15,7 @@ export default function AddPostPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-b from-[#050810] to-[#0B0F1A] pt-24 pb-20 px-4">
+      <div className="min-h-screen bg-linear-to-b from-[#050810] to-[#0B0F1A] pt-24 pb-20 px-4">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-6">
