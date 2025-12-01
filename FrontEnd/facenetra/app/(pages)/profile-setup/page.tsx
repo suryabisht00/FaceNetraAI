@@ -4,16 +4,25 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { authUtils } from '@/lib/utils/auth'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import ProfilePreview from '@/components/profile/ProfilePreview'
-import ProfileForm from '@/components/profile/ProfileForm'
+import EditProfileHeader from '@/components/profile/EditProfileHeader'
+import ProfileCoverPhoto from '@/components/profile/ProfileCoverPhoto'
+import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload'
+import ProfileFormFields from '@/components/profile/ProfileFormFields'
+import InterestTags from '@/components/profile/InterestTags'
+import PrivacyToggle from '@/components/profile/PrivacyToggle'
+import { useProfileUpdate } from '@/hooks/useProfileUpdate'
+import { useImageUpload } from '@/hooks/useImageUpload'
 
 interface ProfileData {
   fullName: string
   username: string
   bio: string
   profilePictureUrl: string
+  coverPhotoUrl: string
   interests: string[]
   instagramUsername: string
+  email: string
+  phone: string
   showDiaryPublicly: boolean
 }
 
@@ -27,17 +36,19 @@ export default function ProfileSetupPage() {
 
 function ProfileSetupContent() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const { updateProfile, loading, error, success, setError } = useProfileUpdate()
+  const { uploadImage, uploadingProfile, uploadingCover } = useImageUpload()
 
   const [profile, setProfile] = useState<ProfileData>({
     fullName: '',
     username: '',
     bio: '',
     profilePictureUrl: '',
+    coverPhotoUrl: '',
     interests: [],
     instagramUsername: '',
+    email: '',
+    phone: '',
     showDiaryPublicly: false,
   })
 
@@ -56,9 +67,12 @@ function ProfileSetupContent() {
             username: data.username || '',
             bio: data.bio || '',
             profilePictureUrl: data.profilePictureUrl || '',
+            coverPhotoUrl: data.coverPhotoUrl || '',
             interests: data.interests?.map((i: any) => i.interest) || [],
             instagramUsername:
               data.socialLinks?.find((s: any) => s.platform === 'INSTAGRAM')?.username || '',
+            email: data.email || '',
+            phone: data.phone || '',
             showDiaryPublicly: data.privacySettings?.showInSearch || false,
           })
         }
@@ -72,6 +86,23 @@ function ProfileSetupContent() {
     }
   }, [])
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const url = await uploadImage(file, type)
+    
+    if (url) {
+      if (type === 'profile') {
+        setProfile(prev => ({ ...prev, profilePictureUrl: url }))
+      } else {
+        setProfile(prev => ({ ...prev, coverPhotoUrl: url }))
+      }
+    } else {
+      setError('Failed to upload image')
+    }
+  }
+
   const handleInterestsChange = (value: string) => {
     const interestsArray = value
       .split(',')
@@ -80,101 +111,108 @@ function ProfileSetupContent() {
     setProfile((prev) => ({ ...prev, interests: interestsArray }))
   }
 
-  const handleProfileChange = (field: keyof ProfileData, value: any) => {
+  const handleFieldChange = (field: string, value: string) => {
     setProfile((prev) => ({ ...prev, [field]: value }))
     setError('')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
+  const handleTogglePrivacy = () => {
+    setProfile((prev) => ({ ...prev, showDiaryPublicly: !prev.showDiaryPublicly }))
+  }
 
-    try {
-      // Update basic profile
-      const profileResponse = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authUtils.getAuthHeader(),
-        },
-        body: JSON.stringify({
-          fullName: profile.fullName,
-          username: profile.username,
-          bio: profile.bio,
-          profilePictureUrl: profile.profilePictureUrl,
-        }),
-      })
+  const handleRemoveInterest = (index: number) => {
+    const newInterests = profile.interests.filter((_, i) => i !== index)
+    setProfile(prev => ({ ...prev, interests: newInterests }))
+  }
 
-      if (!profileResponse.ok) {
-        const { error } = await profileResponse.json()
-        throw new Error(error || 'Failed to update profile')
-      }
+  const handleAddInterest = (interest: string) => {
+    if (interest && !profile.interests.includes(interest)) {
+      setProfile(prev => ({ ...prev, interests: [...prev.interests, interest] }))
+    }
+  }
 
-      // Update Instagram link if provided
-      if (profile.instagramUsername) {
-        await fetch('/api/profile/social-links', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authUtils.getAuthHeader(),
-          },
-          body: JSON.stringify({
-            platform: 'INSTAGRAM',
-            username: profile.instagramUsername,
-            isVisible: true,
-          }),
-        })
-      }
-
-      // Update interests if provided
-      if (profile.interests.length > 0) {
-        await fetch('/api/profile/interests', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authUtils.getAuthHeader(),
-          },
-          body: JSON.stringify({
-            interests: profile.interests,
-          }),
-        })
-      }
-
-      setSuccess('Profile updated successfully!')
-      
-      // Redirect to profile page after 1.5 seconds
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    
+    const isSuccess = await updateProfile(profile)
+    
+    if (isSuccess) {
       setTimeout(() => {
         router.push('/feed')
       }, 1500)
-    } catch (err: any) {
-      setError(err.message || 'Failed to update profile')
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-background-dark font-display text-[#E5E7EB]">
-      <div className="grid w-full max-w-7xl grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2 my-8 sm:my-12 lg:my-16">
-        <ProfilePreview
-          fullName={profile.fullName}
-          username={profile.username}
-          bio={profile.bio}
-          profilePictureUrl={profile.profilePictureUrl}
-          interests={profile.interests}
-        />
+    <div className="min-h-screen bg-[#0B0F1A] pt-16">
+      <EditProfileHeader onSave={handleSubmit} loading={loading} />
 
-        <ProfileForm
-          profile={profile}
-          onProfileChange={handleProfileChange}
-          onInterestsChange={handleInterestsChange}
-          onSubmit={handleSubmit}
-          loading={loading}
-          error={error}
-          success={success}
-        />
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
+        {/* Alert Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-6 p-4 bg-green-500/10 border border-green-500/50 rounded-lg text-green-400">
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Cover Photo Section */}
+          <div className="relative">
+            <ProfileCoverPhoto
+              coverPhotoUrl={profile.coverPhotoUrl}
+              onUpload={(e) => handleImageUpload(e, 'cover')}
+              uploading={uploadingCover}
+            />
+
+            <ProfilePictureUpload
+              profilePictureUrl={profile.profilePictureUrl}
+              fullName={profile.fullName}
+              onUpload={(e) => handleImageUpload(e, 'profile')}
+              uploading={uploadingProfile}
+            />
+          </div>
+
+          {/* Spacer for profile picture */}
+          <div className="h-12 sm:h-16"></div>
+
+          {/* Form Fields */}
+          <ProfileFormFields
+            profile={profile}
+            onFieldChange={handleFieldChange}
+            onInterestsChange={handleInterestsChange}
+          />
+
+          {/* Interest Tags Display */}
+          <InterestTags
+            interests={profile.interests}
+            onRemove={handleRemoveInterest}
+            onAdd={handleAddInterest}
+          />
+
+          {/* Privacy Toggle */}
+          <PrivacyToggle
+            checked={profile.showDiaryPublicly}
+            onChange={handleTogglePrivacy}
+          />
+
+          {/* Submit Button - Fixed at Bottom */}
+          <div className="fixed bottom-0 left-0 right-0 bg-[#0B0F1A] border-t border-white/10 p-4 z-10">
+            <div className="max-w-4xl mx-auto">
+              <button
+                type="submit"
+                disabled={loading || uploadingProfile || uploadingCover}
+                className="w-full py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                {loading ? 'Saving...' : 'Save Profile'}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   )
