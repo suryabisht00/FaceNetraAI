@@ -151,6 +151,56 @@ export const postService = {
   },
 
   /**
+   * Get public feed posts (all public posts from all users)
+   */
+  async getPublicFeedPosts(userId: string, limit = 20, offset = 0) {
+    // Get all public posts from all users
+    const posts = await prisma.post.findMany({
+      where: {
+        visibility: 'PUBLIC',
+      },
+      include: {
+        media: {
+          orderBy: { mediaOrder: 'asc' },
+        },
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            profilePictureUrl: true,
+            isVerified: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    })
+
+    // Check which posts the current user has liked
+    const postIds = posts.map(p => p.id)
+    const userLikes = await prisma.like.findMany({
+      where: {
+        userId,
+        targetType: 'POST',
+        targetId: { in: postIds },
+      },
+      select: {
+        targetId: true,
+      },
+    })
+
+    const likedPostIds = new Set(userLikes.map(like => like.targetId))
+
+    // Add isLiked flag to each post
+    return posts.map(post => ({
+      ...post,
+      isLiked: likedPostIds.has(post.id),
+    }))
+  },
+
+  /**
    * Update post
    */
   async updatePost(postId: string, userId: string, data: { content?: string; visibility?: 'PUBLIC' | 'PRIVATE' | 'FRIENDS_ONLY' }) {

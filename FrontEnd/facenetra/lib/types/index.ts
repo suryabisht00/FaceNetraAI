@@ -82,6 +82,7 @@ export interface Post {
   commentsCount: number
   sharesCount: number
   isPinned: boolean
+  isLiked?: boolean
   createdAt: Date
   updatedAt: Date
   user: {

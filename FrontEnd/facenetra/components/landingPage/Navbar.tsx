@@ -66,7 +66,7 @@ export default function Navbar() {
         isVisible ? 'top-5 opacity-100' : '-top-24 opacity-0'
       }`}>
         <div className="flex items-center gap-3 py-1">
-          <a href="/" className="cursor-pointer">
+          <a href="/feed" className="cursor-pointer">
             <img 
               src="/logo.png" 
               alt="FaceNetraAI Logo" 
@@ -89,9 +89,9 @@ export default function Navbar() {
             <li>
               <a
                 className="text-sm font-medium leading-normal px-5 py-2.5 rounded-xl transition-all hover:text-white hover:bg-primary/10"
-                href="#profile"
+                href="/my-posts"
               >
-                My Profile
+                My Posts
               </a>
             </li>
             <li>
@@ -156,7 +156,7 @@ export default function Navbar() {
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}>
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <a href="/" className="cursor-pointer">
+          <a href="/feed" className="cursor-pointer">
             <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'cursive' }}>FaceNetraAI</h1>
           </a>
           <div className="flex items-center gap-3">
@@ -214,7 +214,7 @@ export default function Navbar() {
           <li className="flex-1">
             <a
               className="flex flex-col items-center py-1.5 px-2 text-white hover:text-primary transition-all active:scale-95 rounded-xl hover:bg-primary/10"
-              href="#home"
+              href="/feed"
               onClick={() => setActiveTab('home')}
             >
               <svg className="w-6 h-6" fill={activeTab === 'home' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@ export default function Navbar() {
           <li className="flex-1">
             <a
               className="flex flex-col items-center py-1.5 px-2 text-white hover:text-primary transition-all active:scale-95 rounded-xl hover:bg-primary/10"
-              href="#add"
+              href="/my-posts"
               onClick={() => setActiveTab('add')}
             >
               <svg className="w-6 h-6" fill={activeTab === 'add' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +258,7 @@ export default function Navbar() {
           <li className="flex-1">
             <a
               className="flex flex-col items-center py-1.5 px-2 text-white hover:text-primary transition-all active:scale-95 rounded-xl hover:bg-primary/10"
-              href="#profile"
+              href="/profile-setup"
               onClick={() => setActiveTab('profile')}
             >
               <svg className="w-6 h-6" fill={activeTab === 'profile' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">

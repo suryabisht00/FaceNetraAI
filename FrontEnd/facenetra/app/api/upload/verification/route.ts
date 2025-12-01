@@ -54,14 +54,21 @@ export async function POST(request: NextRequest) {
     const headers = new Headers();
     if (FACE_API_KEY) headers.append('X-API-Key', FACE_API_KEY);
 
-    const searchResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
-      method: 'POST',
-      headers,
-      body: searchFormData,
-    });
-
-    const searchData = await searchResponse.json();
-    console.log('🔍 Search result:', searchData);
+    let searchResponse;
+    let searchData;
+    
+    try {
+      searchResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
+        method: 'POST',
+        headers,
+        body: searchFormData,
+      });
+      searchData = await searchResponse.json();
+      console.log('🔍 Search result:', searchData);
+    } catch (fetchError: any) {
+      console.error('❌ Face API search failed:', fetchError.message);
+      throw new Error(`Failed to connect to face recognition API: ${fetchError.message}`);
+    }
 
     let vectorId: string;
     let matchFound: boolean;
@@ -88,14 +95,21 @@ export async function POST(request: NextRequest) {
         verified_at: new Date().toISOString(),
       }));
 
-      const addResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
-        method: 'POST',
-        headers,
-        body: addFormData,
-      });
-
-      const addData = await addResponse.json();
-      console.log('➕ Add face result:', addData);
+      let addResponse;
+      let addData;
+      
+      try {
+        addResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
+          method: 'POST',
+          headers,
+          body: addFormData,
+        });
+        addData = await addResponse.json();
+        console.log('➕ Add face result:', addData);
+      } catch (fetchError: any) {
+        console.error('❌ Face API add failed:', fetchError.message);
+        throw new Error(`Failed to add face to database: ${fetchError.message}`);
+      }
 
       if (!addData.success) {
         return NextResponse.json(
@@ -113,16 +127,27 @@ export async function POST(request: NextRequest) {
 
     // Step 6: Authenticate user (create account or login) and generate JWT
     console.log('🔐 Authenticating user with vectorId:', vectorId);
-    const authResponse = await fetch(`${request.nextUrl.origin}/api/auth/face-verification`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vectorId,
-        cloudinaryUrl,
-        userName: finalUserName,
-        confidence,
-      }),
-    });
+    
+    // Use internal API URL to avoid SSL issues when accessed via ngrok
+    // This ensures internal API calls always use HTTP to localhost
+    const internalApiUrl = process.env.INTERNAL_API_URL || 'http://localhost:3000';
+    
+    let authResponse;
+    try {
+      authResponse = await fetch(`${internalApiUrl}/api/auth/face-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vectorId,
+          cloudinaryUrl,
+          userName: finalUserName,
+          confidence,
+        }),
+      });
+    } catch (fetchError: any) {
+      console.error('❌ Authentication API call failed:', fetchError.message);
+      throw new Error(`Failed to connect to authentication service: ${fetchError.message}`);
+    }
 
     if (!authResponse.ok) {
       const authError = await authResponse.json();

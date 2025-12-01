@@ -157,7 +157,7 @@ function ProfileSetupContent() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-background-dark font-display text-[#E5E7EB]">
-      <div className="grid w-full max-w-7xl grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="grid w-full max-w-7xl grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2 my-8 sm:my-12 lg:my-16">
         <ProfilePreview
           fullName={profile.fullName}
           username={profile.username}
