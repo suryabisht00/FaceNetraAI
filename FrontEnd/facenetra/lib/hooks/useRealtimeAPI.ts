@@ -47,6 +47,13 @@ interface TaskStatus {
       is_valid: boolean;
     };
   };
+  faceVerification?: {
+    vectorId: string;
+    confidence: number;
+    cloudinaryUrl: string;
+    userName: string;
+    matchFound: boolean;
+  };
   [key: string]: unknown;
 }
 
@@ -67,6 +74,8 @@ export const useRealtimeAPI = () => {
   const processingFrameRef = useRef(false);
   const lastFrameTimeRef = useRef(0);
   const verificationCompleteRef = useRef(false);
+  const capturedImageRef = useRef<string | null>(null);
+  const faceVerificationTriggeredRef = useRef(false);
 
   const createSession = useCallback(async (): Promise<boolean> => {
     try {
@@ -282,6 +291,56 @@ export const useRealtimeAPI = () => {
     setIsStreaming(true);
   }, [createSession, getUserMedia, endSession]);
 
+  const performFaceVerification = useCallback(async (userName?: string) => {
+    if (!capturedImageRef.current) {
+      console.error('❌ No captured image available for verification');
+      return;
+    }
+
+    if (faceVerificationTriggeredRef.current) {
+      console.log('⚠️ Face verification already triggered');
+      return;
+    }
+
+    faceVerificationTriggeredRef.current = true;
+    console.log('🔍 Starting face verification...');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', capturedImageRef.current);
+      formData.append('name', userName || 'User');
+
+      const response = await fetch('/api/upload/verification', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Face verification complete:', data);
+        
+        // Update task status with face verification data
+        setTaskStatus(prevStatus => ({
+          ...prevStatus,
+          faceVerification: {
+            vectorId: data.data.vectorId,
+            confidence: data.data.confidence,
+            cloudinaryUrl: data.data.cloudinaryUrl,
+            userName: data.data.userName,
+            matchFound: data.matchFound,
+          },
+        }));
+      } else {
+        console.error('❌ Face verification failed:', data.error);
+        setError('Face verification failed: ' + data.error);
+      }
+    } catch (error: any) {
+      console.error('❌ Face verification error:', error);
+      setError('Face verification error: ' + error.message);
+    }
+  }, []);
+
   const updateTaskStatus = useCallback(async () => {
     // Don't make API call if verification is already complete
     if (verificationCompleteRef.current) {
@@ -335,6 +394,12 @@ export const useRealtimeAPI = () => {
           taskIntervalRef.current = null;
         }
         
+        // ✅ If liveness verification passed, trigger face verification
+        if (status.result.final_result && !faceVerificationTriggeredRef.current) {
+          console.log('✅ Liveness verification passed! Triggering face verification...');
+          performFaceVerification();
+        }
+        
         // Stop camera after a short delay, preserving the task status
         setTimeout(async () => {
           console.log('📷 Stopping camera (preserving status)');
@@ -358,13 +423,27 @@ export const useRealtimeAPI = () => {
         taskIntervalRef.current = null;
       }
     }
-  }, [sessionId, stopCamera]);
+  }, [sessionId, stopCamera, performFaceVerification]);
 
   const startLivenessTask = useCallback(async () => {
     if (!sessionId) {
       setError('No active session. Start camera first.');
       return;
     }
+    
+    // 📸 Capture image BEFORE starting liveness task
+    if (videoRef.current && canvasRef.current) {
+      try {
+        const ctx = canvasRef.current.getContext('2d')!;
+        ctx.drawImage(videoRef.current, 0, 0);
+        const frameData = canvasRef.current.toDataURL('image/jpeg', 0.8);
+        capturedImageRef.current = frameData;
+        console.log('📸 Image captured at verification start');
+      } catch (captureErr) {
+        console.error('❌ Failed to capture image:', captureErr);
+      }
+    }
+    
     try {
       // Reset completion flag for new task
       console.log('🔄 Starting new liveness task - resetting completion flag');
@@ -397,6 +476,8 @@ export const useRealtimeAPI = () => {
       // Reset completion flag
       console.log('🔄 Resetting task session - clearing completion flag');
       verificationCompleteRef.current = false;
+      capturedImageRef.current = null;
+      faceVerificationTriggeredRef.current = false;
       
       const response = await fetch(`${API_BASE_URL}/liveness/${sessionId}`, {
         method: 'POST',

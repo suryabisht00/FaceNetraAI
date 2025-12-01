@@ -139,6 +139,77 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Face Verification Results */}
+            {taskStatus.faceVerification && taskStatus.result.final_result && (
+              <div className="mb-6 p-6 rounded-2xl bg-blue-900/40 border border-blue-400/30">
+                <h3 className="text-xl font-bold text-blue-200 mb-4 flex items-center gap-2">
+                  <span>🔍</span>
+                  Face Recognition Results
+                </h3>
+                <div className="space-y-3">
+                  {/* Match Status */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80 text-sm">Status:</span>
+                    <span className={`font-bold px-3 py-1 rounded-lg ${
+                      taskStatus.faceVerification.matchFound 
+                        ? 'bg-blue-500/30 text-blue-200' 
+                        : 'bg-purple-500/30 text-purple-200'
+                    }`}>
+                      {taskStatus.faceVerification.matchFound ? '✅ Match Found' : '🆕 New User'}
+                    </span>
+                  </div>
+
+                  {/* User Name */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80 text-sm">User:</span>
+                    <span className="text-white font-bold">
+                      {taskStatus.faceVerification.userName}
+                    </span>
+                  </div>
+
+                  {/* Vector ID */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80 text-sm">Vector ID:</span>
+                    <span className="text-green-300 font-mono text-xs bg-black/30 px-2 py-1 rounded">
+                      {taskStatus.faceVerification.vectorId}
+                    </span>
+                  </div>
+
+                  {/* Confidence */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80 text-sm">Confidence:</span>
+                    <span className="text-green-300 font-bold">
+                      {(taskStatus.faceVerification.confidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {/* Cloudinary Image */}
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <span className="text-white/80 text-sm block mb-2">Captured Image:</span>
+                    <a 
+                      href={taskStatus.faceVerification.cloudinaryUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-300 hover:text-blue-200 transition-colors underline"
+                    >
+                      <span>🖼️ View Image on Cloudinary</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                    {/* Preview thumbnail */}
+                    <div className="mt-3">
+                      <img 
+                        src={taskStatus.faceVerification.cloudinaryUrl} 
+                        alt="Captured face" 
+                        className="w-full rounded-lg border-2 border-white/20 shadow-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Detailed Results */}
             <div className="space-y-4 bg-black/30 rounded-xl p-6">
               {/* Task Completion */}
