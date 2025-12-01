@@ -63,63 +63,95 @@ export async function POST(request: NextRequest) {
     const searchData = await searchResponse.json();
     console.log('🔍 Search result:', searchData);
 
-    // Step 4: If match found, return match info
-    // Check for matched_user_id (indicates a match was found)
+    let vectorId: string;
+    let matchFound: boolean;
+    let confidence: number;
+    let finalUserName: string;
+
+    // Step 4: If match found, use existing vectorId
     if (searchData.matched_user_id && searchData.match_score) {
       console.log('✅ Face match found!');
-      return NextResponse.json({
-        success: true,
-        matchFound: true,
-        data: {
-          vectorId: searchData.matched_user_id,
-          confidence: searchData.match_score,
-          cloudinaryUrl: cloudinaryUrl,
-          cloudinaryPublicId: cloudinaryPublicId,
-          userName: searchData.matched_metadata?.name || searchData.matched_user_id || 'Unknown',
-        },
+      matchFound = true;
+      vectorId = searchData.matched_user_id;
+      confidence = searchData.match_score;
+      finalUserName = searchData.matched_metadata?.name || searchData.matched_user_id || 'Unknown';
+    } else {
+      // Step 5: No match found, add new face to database
+      console.log('❌ No match found, adding new face to database...');
+      const addFormData = new FormData();
+      addFormData.append('action', 'add');
+      addFormData.append('image', file);
+      addFormData.append('name', userName || 'Anonymous User');
+      addFormData.append('metadata', JSON.stringify({
+        cloudinary_url: cloudinaryUrl,
+        cloudinary_public_id: cloudinaryPublicId,
+        verified_at: new Date().toISOString(),
+      }));
+
+      const addResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
+        method: 'POST',
+        headers,
+        body: addFormData,
       });
+
+      const addData = await addResponse.json();
+      console.log('➕ Add face result:', addData);
+
+      if (!addData.success) {
+        return NextResponse.json(
+          { success: false, error: addData.error || 'Failed to add face' },
+          { status: 500 }
+        );
+      }
+
+      console.log('✅ New face added successfully!');
+      matchFound = false;
+      vectorId = addData.data.person_id;
+      confidence = 1.0;
+      finalUserName = userName || 'Anonymous User';
     }
 
-    // Step 5: No match found, add new face to database
-    console.log('❌ No match found, adding new face to database...');
-    const addFormData = new FormData();
-    addFormData.append('action', 'add');
-    addFormData.append('image', file);
-    addFormData.append('name', userName || 'Anonymous User');
-    addFormData.append('metadata', JSON.stringify({
-      cloudinary_url: cloudinaryUrl,
-      cloudinary_public_id: cloudinaryPublicId,
-      verified_at: new Date().toISOString(),
-    }));
-
-    const addResponse = await fetch(`${FACE_API_BASE_URL}/faces`, {
+    // Step 6: Authenticate user (create account or login) and generate JWT
+    console.log('🔐 Authenticating user with vectorId:', vectorId);
+    const authResponse = await fetch(`${request.nextUrl.origin}/api/auth/face-verification`, {
       method: 'POST',
-      headers,
-      body: addFormData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vectorId,
+        cloudinaryUrl,
+        userName: finalUserName,
+        confidence,
+      }),
     });
 
-    const addData = await addResponse.json();
-    console.log('➕ Add face result:', addData);
-
-    if (addData.success) {
-      console.log('✅ New face added successfully!');
-      return NextResponse.json({
-        success: true,
-        matchFound: false,
-        data: {
-          vectorId: addData.data.person_id,
-          confidence: 1.0, // New entry, 100% confidence
-          cloudinaryUrl: cloudinaryUrl,
-          cloudinaryPublicId: cloudinaryPublicId,
-          userName: userName || 'Anonymous User',
-        },
-      });
-    } else {
+    if (!authResponse.ok) {
+      const authError = await authResponse.json();
+      console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
-        { success: false, error: addData.error || 'Failed to add face' },
+        { success: false, error: authError.error || 'Authentication failed' },
         { status: 500 }
       );
     }
+
+    const authData = await authResponse.json();
+    console.log('✅ Authentication successful:', authData.isNewUser ? 'New user created' : 'User logged in');
+
+    // Return authentication result with JWT tokens
+    return NextResponse.json({
+      success: true,
+      matchFound,
+      isNewUser: authData.isNewUser,
+      data: {
+        vectorId,
+        confidence,
+        cloudinaryUrl,
+        cloudinaryPublicId,
+        userName: finalUserName,
+        user: authData.user,
+      },
+      tokens: authData.tokens,
+      message: authData.message,
+    });
   } catch (error: any) {
     console.error('❌ Verification error:', error);
     return NextResponse.json(

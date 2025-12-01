@@ -26,6 +26,20 @@ interface TaskStatus {
       is_valid: boolean;
     };
   };
+  faceVerification?: {
+    vectorId: string;
+    confidence: number;
+    cloudinaryUrl: string;
+    userName: string;
+    matchFound: boolean;
+    isNewUser?: boolean;
+    user?: {
+      id: string;
+      username: string;
+      fullName: string;
+      profilePictureUrl?: string;
+    };
+  };
   [key: string]: unknown;
 }
 
@@ -95,6 +109,36 @@ export const TaskPanel = ({ taskStatus }: TaskPanelProps) => {
           <div className={`text-center p-3 rounded font-bold ${taskStatus.result.final_result ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
             FINAL RESULT: {taskStatus.result.final_result ? 'LIVE PERSON VERIFIED' : 'VERIFICATION FAILED'}
           </div>
+          
+          {/* Face Recognition Results */}
+          {taskStatus.result.final_result && taskStatus.faceVerification && (
+            <div className="mt-4 p-4 bg-linear-to-br from-purple-900/50 to-blue-900/50 rounded-lg border border-purple-500">
+              <h4 className="font-bold text-white mb-3 flex items-center text-lg">
+                <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+                🔍 Face Recognition Results
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Status:</span>
+                  <span className="text-green-400 font-bold flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {taskStatus.faceVerification.matchFound ? 'Match Found' : 'New User Created'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">User:</span>
+                  <span className="text-white font-medium">{taskStatus.faceVerification.user?.fullName || taskStatus.faceVerification.userName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Confidence:</span>
+                  <span className="text-white font-mono">{(taskStatus.faceVerification.confidence * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-blue-600 text-white rounded text-center font-bold animate-pulse">
+                🚀 Redirecting to feed...
+              </div>
+            </div>
+          )}
         </>
       )}
       {taskStatus.active && (taskStatus.time_remaining || 0) <= 5 && (

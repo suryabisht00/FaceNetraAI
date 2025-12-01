@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = '/api/proxy'; // Use Next.js API proxy
 const API_KEY = process.env.FACE_RECOGNITION_API_KEY;
@@ -53,11 +54,23 @@ interface TaskStatus {
     cloudinaryUrl: string;
     userName: string;
     matchFound: boolean;
+    isNewUser?: boolean;
+    tokens?: {
+      accessToken: string;
+      refreshToken: string;
+    };
+    user?: {
+      id: string;
+      username: string;
+      fullName: string;
+      profilePictureUrl?: string;
+    };
   };
   [key: string]: unknown;
 }
 
 export const useRealtimeAPI = () => {
+  const router = useRouter();
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [cameraAccess, setCameraAccess] = useState('Not granted');
@@ -303,7 +316,7 @@ export const useRealtimeAPI = () => {
     }
 
     faceVerificationTriggeredRef.current = true;
-    console.log('🔍 Starting face verification...');
+    console.log('🔍 Starting face verification and authentication...');
 
     try {
       const formData = new FormData();
@@ -318,7 +331,19 @@ export const useRealtimeAPI = () => {
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Face verification complete:', data);
+        console.log('✅ Face verification and authentication complete:', data);
+        
+        // Store JWT tokens in localStorage
+        if (data.tokens) {
+          localStorage.setItem('accessToken', data.tokens.accessToken);
+          localStorage.setItem('refreshToken', data.tokens.refreshToken);
+          
+          // Also set as cookies for middleware
+          document.cookie = `accessToken=${data.tokens.accessToken}; path=/; max-age=${60 * 60}`; // 1 hour
+          document.cookie = `refreshToken=${data.tokens.refreshToken}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
+          
+          console.log('💾 JWT tokens stored in localStorage and cookies');
+        }
         
         // Update task status with face verification data
         setTaskStatus(prevStatus => ({
@@ -329,8 +354,17 @@ export const useRealtimeAPI = () => {
             cloudinaryUrl: data.data.cloudinaryUrl,
             userName: data.data.userName,
             matchFound: data.matchFound,
+            isNewUser: data.isNewUser,
+            tokens: data.tokens,
+            user: data.data.user,
           },
         }));
+
+        // Redirect to /feed after 2 seconds
+        console.log('🚀 Redirecting to /feed in 2 seconds...');
+        setTimeout(() => {
+          router.push('/feed');
+        }, 2000);
       } else {
         console.error('❌ Face verification failed:', data.error);
         setError('Face verification failed: ' + data.error);
@@ -339,7 +373,7 @@ export const useRealtimeAPI = () => {
       console.error('❌ Face verification error:', error);
       setError('Face verification error: ' + error.message);
     }
-  }, []);
+  }, [router]);
 
   const updateTaskStatus = useCallback(async () => {
     // Don't make API call if verification is already complete

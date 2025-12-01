@@ -184,7 +184,7 @@ export default function LoginPage() {
                   </div>
 
                   {/* Cloudinary Image */}
-                  <div className="mt-4 pt-4 border-t border-white/20">
+                  {/* <div className="mt-4 pt-4 border-t border-white/20">
                     <span className="text-white/80 text-sm block mb-2">Captured Image:</span>
                     <a 
                       href={taskStatus.faceVerification.cloudinaryUrl} 
@@ -197,7 +197,6 @@ export default function LoginPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </a>
-                    {/* Preview thumbnail */}
                     <div className="mt-3">
                       <img 
                         src={taskStatus.faceVerification.cloudinaryUrl} 
@@ -205,7 +204,7 @@ export default function LoginPage() {
                         className="w-full rounded-lg border-2 border-white/20 shadow-lg"
                       />
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
