@@ -19,8 +19,8 @@ model User {
   vectorId          String    @unique @map("vector_id")
   randomId          String    @unique @map("random_id")
   username          String?   @unique
-  email             String?   @unique
-  phone             String?   @unique
+  email             String?
+  phone             String?
   fullName          String    @map("full_name")
   bio               String?
   profilePictureUrl String?   @map("profile_picture_url")

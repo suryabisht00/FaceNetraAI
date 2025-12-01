@@ -219,3 +219,63 @@ export interface RegisterResponse {
   accessToken: string
   refreshToken: string
 }
+
+/**
+ * Profile Update Types
+ */
+
+export interface UpdateProfileInput {
+  username?: string
+  fullName?: string
+  bio?: string
+  profilePictureUrl?: string
+  coverPhotoUrl?: string
+  email?: string
+  phone?: string
+}
+
+export interface SocialLinkInput {
+  platform: 'INSTAGRAM' | 'TWITTER' | 'LINKEDIN' | 'FACEBOOK' | 'GITHUB' | 'TIKTOK' | 'YOUTUBE'
+  username: string
+  isVisible?: boolean
+}
+
+export interface InterestInput {
+  interest: string
+  category?: string
+}
+
+export interface ProfileResponse {
+  id: string
+  vectorId: string
+  randomId: string
+  username: string | null
+  email: string | null
+  phone: string | null
+  fullName: string
+  bio: string | null
+  profilePictureUrl: string | null
+  coverPhotoUrl: string | null
+  isVerified: boolean
+  isActive: boolean
+  privacyLevel: 'PUBLIC' | 'PRIVATE' | 'FRIENDS_ONLY'
+  createdAt: Date
+  updatedAt: Date
+  lastLogin: Date | null
+  socialLinks: SocialLink[]
+  interests: Interest[]
+  stats: {
+    postsCount: number
+    friendsCount: number
+    followersCount: number
+    followingCount: number
+  }
+  privacySettings: {
+    profileVisibility: 'PUBLIC' | 'PRIVATE' | 'FRIENDS_ONLY'
+    showInSearch: boolean
+    allowScanDiscovery: boolean
+    showSocialLinks: boolean
+    showLocation: boolean
+    allowMessagesFrom: 'EVERYONE' | 'FRIENDS_ONLY' | 'NONE'
+  } | null
+}

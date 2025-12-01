@@ -84,7 +84,7 @@ export const userService = {
    * Find user by username
    */
   async findByUsername(username: string) {
-    return await prisma.user.findUnique({
+    return await prisma.user.findFirst({
       where: { username },
       include: {
         privacySettings: true,
@@ -188,5 +188,162 @@ export const userService = {
     return await prisma.user.delete({
       where: { id },
     })
+  },
+
+  /**
+   * Add social link for user
+   */
+  async addSocialLink(
+    userId: string,
+    platform: string,
+    username: string,
+    isVisible = true
+  ) {
+    const profileUrls: Record<string, string> = {
+      INSTAGRAM: 'https://instagram.com/',
+      TWITTER: 'https://twitter.com/',
+      LINKEDIN: 'https://linkedin.com/in/',
+      FACEBOOK: 'https://facebook.com/',
+      GITHUB: 'https://github.com/',
+      TIKTOK: 'https://tiktok.com/@',
+      YOUTUBE: 'https://youtube.com/@',
+    }
+
+    const cleanUsername = username.startsWith('@') ? username.substring(1) : username
+    const profileUrl = `${profileUrls[platform]}${cleanUsername}`
+
+    return await prisma.userSocialLink.create({
+      data: {
+        userId,
+        platform: platform as any,
+        username: cleanUsername,
+        profileUrl,
+        isVisible,
+      },
+    })
+  },
+
+  /**
+   * Update social link
+   */
+  async updateSocialLink(linkId: string, username?: string, isVisible?: boolean) {
+    const link = await prisma.userSocialLink.findUnique({
+      where: { id: linkId },
+    })
+
+    if (!link) throw new Error('Social link not found')
+
+    const updateData: any = {}
+    if (username !== undefined) {
+      const profileUrls: Record<string, string> = {
+        INSTAGRAM: 'https://instagram.com/',
+        TWITTER: 'https://twitter.com/',
+        LINKEDIN: 'https://linkedin.com/in/',
+        FACEBOOK: 'https://facebook.com/',
+        GITHUB: 'https://github.com/',
+        TIKTOK: 'https://tiktok.com/@',
+        YOUTUBE: 'https://youtube.com/@',
+      }
+      const cleanUsername = username.startsWith('@') ? username.substring(1) : username
+      updateData.username = cleanUsername
+      updateData.profileUrl = `${profileUrls[link.platform]}${cleanUsername}`
+    }
+    if (isVisible !== undefined) {
+      updateData.isVisible = isVisible
+    }
+
+    return await prisma.userSocialLink.update({
+      where: { id: linkId },
+      data: updateData,
+    })
+  },
+
+  /**
+   * Delete social link
+   */
+  async deleteSocialLink(linkId: string) {
+    return await prisma.userSocialLink.delete({
+      where: { id: linkId },
+    })
+  },
+
+  /**
+   * Add interests for user (bulk)
+   */
+  async addInterests(userId: string, interests: string[]) {
+    // Filter out existing interests first
+    const existingInterests = await prisma.userInterest.findMany({
+      where: {
+        userId,
+        interest: { in: interests.map(i => i.trim()) },
+      },
+    })
+
+    const existingInterestNames = existingInterests.map(i => i.interest)
+    const newInterests = interests
+      .map(i => i.trim())
+      .filter(i => !existingInterestNames.includes(i))
+      .map(interest => ({ userId, interest }))
+
+    if (newInterests.length === 0) {
+      return { count: 0 }
+    }
+
+    return await prisma.userInterest.createMany({
+      data: newInterests,
+    })
+  },
+
+  /**
+   * Delete interest
+   */
+  async deleteInterest(interestId: string) {
+    return await prisma.userInterest.delete({
+      where: { id: interestId },
+    })
+  },
+
+  /**
+   * Get user's full profile with stats
+   */
+  async getFullProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        socialLinks: {
+          where: { isVisible: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        interests: {
+          orderBy: { createdAt: 'desc' },
+        },
+        privacySettings: true,
+      },
+    })
+
+    if (!user) return null
+
+    const [postsCount, friendsCount, followersCount, followingCount] = await Promise.all([
+      prisma.post.count({ where: { userId } }),
+      prisma.connection.count({
+        where: { userId, connectionType: 'FRIEND', status: 'ACCEPTED' },
+      }),
+      prisma.connection.count({
+        where: { connectedUserId: userId, connectionType: 'FOLLOWING', status: 'ACCEPTED' },
+      }),
+      prisma.connection.count({
+        where: { userId, connectionType: 'FOLLOWING', status: 'ACCEPTED' },
+      }),
+    ])
+
+    return {
+      ...user,
+      stats: {
+        postsCount,
+        friendsCount,
+        followersCount,
+        followingCount,
+      },
+    }
   },
 }
