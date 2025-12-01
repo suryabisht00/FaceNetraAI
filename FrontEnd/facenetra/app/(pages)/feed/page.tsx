@@ -1,4 +1,9 @@
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+
 export default function FeedPage() {
-  return <div>Hello welcome to feed page
-  </div>;
+  return (
+    <ProtectedRoute>
+      <div>Hello welcome to feed page</div>
+    </ProtectedRoute>
+  );
 }

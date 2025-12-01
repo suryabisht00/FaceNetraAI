@@ -4,6 +4,11 @@ import { useRouter } from 'next/navigation';
 const API_BASE_URL = '/api/proxy'; // Use Next.js API proxy
 const API_KEY = process.env.FACE_RECOGNITION_API_KEY;
 
+interface UseRealtimeAPIOptions {
+  onLoginSuccess?: (message: string) => void;
+  onLoginError?: (message: string) => void;
+}
+
 interface DetectionResult {
   status: string;
   confidence: number;
@@ -69,7 +74,7 @@ interface TaskStatus {
   [key: string]: unknown;
 }
 
-export const useRealtimeAPI = () => {
+export const useRealtimeAPI = (options?: UseRealtimeAPIOptions) => {
   const router = useRouter();
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -343,6 +348,9 @@ export const useRealtimeAPI = () => {
           document.cookie = `refreshToken=${data.tokens.refreshToken}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
           
           console.log('💾 JWT tokens stored in localStorage and cookies');
+          
+          // Trigger a storage event to notify other components (like Navbar) about the auth change
+          window.dispatchEvent(new Event('storage'));
         }
         
         // Update task status with face verification data
@@ -360,7 +368,16 @@ export const useRealtimeAPI = () => {
           },
         }));
 
-        // Redirect to /feed after 2 seconds
+        // Show success toast if callback provided
+        const successMessage = data.isNewUser 
+          ? 'Account created successfully! Redirecting...' 
+          : 'Login successful! Welcome back!';
+        
+        if (options?.onLoginSuccess) {
+          options.onLoginSuccess(successMessage);
+        }
+
+        // Redirect to /feed after showing toast
         console.log('🚀 Redirecting to /feed in 2 seconds...');
         setTimeout(() => {
           router.push('/feed');
@@ -368,12 +385,20 @@ export const useRealtimeAPI = () => {
       } else {
         console.error('❌ Face verification failed:', data.error);
         setError('Face verification failed: ' + data.error);
+        
+        if (options?.onLoginError) {
+          options.onLoginError(data.error);
+        }
       }
     } catch (error: any) {
       console.error('❌ Face verification error:', error);
       setError('Face verification error: ' + error.message);
+      
+      if (options?.onLoginError) {
+        options.onLoginError(error.message);
+      }
     }
-  }, [router]);
+  }, [router, options]);
 
   const updateTaskStatus = useCallback(async () => {
     // Don't make API call if verification is already complete

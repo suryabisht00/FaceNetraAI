@@ -1,16 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, logout } = useAuth();
 
-  // Hide bottom navbar on landing, login, and register pages
-  const hideBottomNav = pathname === '/' || pathname === '/login' || pathname === '/register';
+  // Hide bottom navbar on landing, login, and realtime pages
+  const hideBottomNav = pathname === '/' || pathname === '/login' || pathname === '/realtime';
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,11 +49,13 @@ export default function Navbar() {
         isVisible ? 'top-5 opacity-100' : '-top-24 opacity-0'
       }`}>
         <div className="flex items-center gap-3 py-1">
-          <img 
-            src="/logo.png" 
-            alt="FaceNetraAI Logo" 
-            className="h-10 w-auto object-contain"
-          />
+          <a href="/" className="cursor-pointer">
+            <img 
+              src="/logo.png" 
+              alt="FaceNetraAI Logo" 
+              className="h-10 w-auto object-contain"
+            />
+          </a>
         </div>
 
         <nav className="flex flex-1 justify-end">
@@ -75,14 +85,25 @@ export default function Navbar() {
                 Diary
               </a>
             </li>
-            <li>
-              <a
-                className="text-sm font-medium leading-normal px-5 py-2.5 rounded-xl transition-all hover:text-white hover:bg-primary/10"
-                href="#logout"
-              >
-                Logout
-              </a>
-            </li>
+            {isAuthenticated ? (
+              <li>
+                <button
+                  className="text-sm font-medium leading-normal px-5 py-2.5 rounded-xl transition-all hover:text-white hover:bg-primary/10"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </li>
+            ) : (
+              <li>
+                <a
+                  className="text-sm font-medium leading-normal px-5 py-2.5 rounded-xl transition-all hover:text-white hover:bg-primary bg-primary/20 border border-primary/40"
+                  href="/login"
+                >
+                  Login
+                </a>
+              </li>
+            )}
           </ul>
         </nav>
       </header>
@@ -92,9 +113,11 @@ export default function Navbar() {
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}>
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'cursive' }}>FaceNetraAI</h1>
+          <a href="/" className="cursor-pointer">
+            <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'cursive' }}>FaceNetraAI</h1>
+          </a>
           <div className="flex items-center gap-3">
-            {pathname === '/' ? (
+            {!isAuthenticated ? (
               <a 
                 href="/login"
                 className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 transition-all active:scale-95 border border-primary/20"
@@ -108,9 +131,13 @@ export default function Navbar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
-                <button className="p-2 hover:bg-primary/10 rounded-xl transition-all active:scale-95 border border-primary/20 backdrop-blur-sm bg-[#0B0F1A]/60">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-red-500/10 rounded-xl transition-all active:scale-95 border border-red-500/20 backdrop-blur-sm bg-[#0B0F1A]/60"
+                  title="Logout"
+                >
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                 </button>
               </>
